@@ -240,11 +240,11 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
-	const char*			pBody = lpData + sizeof(tagPackageHead);
-	tagPackageHead*		pFrameHead = (tagPackageHead*)lpData;
-	unsigned int		nBodyLen = pFrameHead->nBodyLen;
-	unsigned int		nMsgCount = pFrameHead->nMsgCount;
-	unsigned int		nFrameSeq = pFrameHead->nSeqNo;
+	const char*					pBody = lpData + sizeof(tagPackageHead);
+	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
+	unsigned int				nBodyLen = pFrameHead->nBodyLen;
+	unsigned int				nMsgCount = pFrameHead->nMsgCount;
+	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
 	for( unsigned int nOffset = 0; nOffset < nBodyLen; )
 	{
