@@ -22,6 +22,7 @@
 typedef struct
 {
 	unsigned __int64				nSeqNo;				///< 自增序号
+	unsigned int					nMarketID;			///< 市场编号
 	unsigned int					nBodyLen;			///< 数据部分长度
 	unsigned int					nMsgCount;			///< 包内的Message数量
 } tagPackageHead;

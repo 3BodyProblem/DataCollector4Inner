@@ -46,7 +46,9 @@ int ParseSvrConfig( inifile::IniFile& refIniFile, std::string sNodeName, LinkCon
 
 	for( int n = 0; n < nIpCount; n++ )
 	{
-		std::string		sIP = refIniFile.getStringValue( sNodeName, std::string("SvrIP"), nErrCode );
+		char			pszTmp[32] = { 0 };
+		::sprintf( pszTmp, "%d", n );
+		std::string		sIP = refIniFile.getStringValue( sNodeName, std::string("SvrIP_")+pszTmp, nErrCode );
 		if( 0 != nErrCode )	{
 			QuoCollector::GetCollector()->OnLog( TLV_ERROR, "Configuration::ParseSvrConfig() : invalid Server IP." );
 			oConfig.m_vctSvrIP.clear();
@@ -55,7 +57,7 @@ int ParseSvrConfig( inifile::IniFile& refIniFile, std::string sNodeName, LinkCon
 		}
 		oConfig.m_vctSvrIP.push_back( sIP );
 
-		unsigned int	nPort = refIniFile.getIntValue( sNodeName, std::string("SvrPort"), nErrCode );
+		unsigned int	nPort = refIniFile.getIntValue( sNodeName, std::string("SvrPort_")+pszTmp, nErrCode );
 		if( 0 != nErrCode )	{
 			QuoCollector::GetCollector()->OnLog( TLV_ERROR, "Configuration::ParseSvrConfig() : invalid Server Port." );
 			oConfig.m_vctSvrIP.clear();

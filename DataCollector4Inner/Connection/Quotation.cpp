@@ -218,7 +218,7 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 		return false;
 	}
 
-	if( false == bErrorFlag )
+	if( true == bErrorFlag )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnRecvData() : an unknow error occur while receiving quotation." );
 		return false;
@@ -250,7 +250,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 	{
 		const tagBlockHead*		pMsg = (tagBlockHead*)(pBody+nOffset);
 
-		nOffset += pMsg->nDataLen;
+		nOffset += (pMsg->nDataLen+sizeof(tagBlockHead));
 
 		if( m_oWorkStatus == ET_SS_WORKING )
 		{
