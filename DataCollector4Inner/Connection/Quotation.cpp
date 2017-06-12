@@ -226,15 +226,6 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 //	QuotationSync::CTPSyncSaver::GetHandle().SaveSnapData( *pMarketData );
 
-	switch( usFunctionID )
-	{
-	case 1000:
-		m_oWorkStatus = ET_SS_INITIALIZING;		///< 设置为初始化完成状态，以通知框架模块初始化已经完成
-		break;
-	default:
-		break;
-	}
-
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
 }
 
@@ -250,15 +241,13 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 	{
 		const tagBlockHead*		pMsg = (tagBlockHead*)(pBody+nOffset);
 
-		nOffset += (pMsg->nDataLen+sizeof(tagBlockHead));
-
 		if( m_oWorkStatus == ET_SS_WORKING )
 		{
 			QuoCollector::GetCollector()->OnData( pMsg->nDataType, (char*)pMsg, pMsg->nDataLen, false );
 		}
 		else
 		{
-			bool	bLastImageFlag = (nOffset+((tagBlockHead*)(pBody+nOffset))->nDataLen)>=nBodyLen ? true : false;
+			bool	bLastImageFlag = ( (nOffset+((tagBlockHead*)(pBody+nOffset))->nDataLen+sizeof(tagBlockHead) >=nBodyLen) && (100==usFunctionID) ) ? true : false;
 
 			QuoCollector::GetCollector()->OnImage( pMsg->nDataType, (char*)pMsg, pMsg->nDataLen, bLastImageFlag );
 
@@ -267,6 +256,8 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 				m_oWorkStatus = ET_SS_WORKING;	///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
 			}
 		}
+
+		nOffset += (pMsg->nDataLen+sizeof(tagBlockHead));
 	}
 
 	return true;
