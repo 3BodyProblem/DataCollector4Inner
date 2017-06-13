@@ -35,7 +35,7 @@ bool LinkConfig::GetConfig( std::string& sIP, unsigned int& nPort )
 
 void OnError( const char* szErrString )
 {
-	QuoCollector::GetCollector()->OnLog( TLV_ERROR, "Configuration::OnError() : error info : %s", szErrString );
+	QuoCollector::GetCollector()->OnLog( TLV_DETAIL, "MBPClientCommIO::OnError() : error info : %s", szErrString );
 }
 
 ///< 解析并加载服务器连接登录配置信息
@@ -109,38 +109,25 @@ int Configuration::Initialize()
 
 	m_tagClientRunParam.uiMaxLinkCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("maxlinkcount"), nErrCode );
 	if( 0 == m_tagClientRunParam.uiMaxLinkCount )	{
-		m_tagClientRunParam.uiMaxLinkCount = 2;
+		m_tagClientRunParam.uiMaxLinkCount = 128;
 	}
 	m_tagClientRunParam.uiSendBufCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("sendbufcount"), nErrCode );
 	if( 0 == m_tagClientRunParam.uiSendBufCount )	{
-		m_tagClientRunParam.uiSendBufCount = 1;
+		m_tagClientRunParam.uiSendBufCount = m_tagClientRunParam.uiMaxLinkCount * 10;
 	}
 	m_tagClientRunParam.uiThreadCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("threadcount"), nErrCode );
 	if( 0 == m_tagClientRunParam.uiThreadCount )	{
-		m_tagClientRunParam.uiThreadCount = 1;
+		m_tagClientRunParam.uiThreadCount = 10;
 	}
 	m_tagClientRunParam.uiPageSize = oIniFile.getIntValue( std::string("ServerIO"), std::string("pagesize"), nErrCode );
 	if( 0 == m_tagClientRunParam.uiPageSize )	{
-		m_tagClientRunParam.uiPageSize = 1024*1024;
+		m_tagClientRunParam.uiPageSize = 1024;
 	}
 	m_tagClientRunParam.uiPageCount = oIniFile.getIntValue( std::string("ServerIO"), std::string("pagecount"), nErrCode );
 	if( 0 == m_tagClientRunParam.uiPageCount )	{
-		m_tagClientRunParam.uiPageCount = 10;
+		m_tagClientRunParam.uiPageCount = 1024 * 20;
 	}
-	int		nSSLFlag = oIniFile.getIntValue( std::string("ServerIO"), std::string("sslflag"), nErrCode );
-	m_tagClientRunParam.bSSL = nSSLFlag==1?true:false;
-	std::string	sCrtFileName = oIniFile.getStringValue( std::string("ServerIO"), std::string("pfxfilepassword"), nErrCode );
-	if( false == sCrtFileName.empty() ) {
-		::strncpy( m_tagClientRunParam.szCrtFileName, sCrtFileName.c_str(), sCrtFileName.length() );
-	}
-	std::string	sPfxFileName = oIniFile.getStringValue( std::string("ServerIO"), std::string("pfxfilepassword"), nErrCode );
-	if( false == sPfxFileName.empty() ) {
-		::strncpy( m_tagClientRunParam.szPfxFileName, sPfxFileName.c_str(), sPfxFileName.length() );
-	}
-	std::string	sPfxFilePswd = oIniFile.getStringValue( std::string("ServerIO"), std::string("pfxfilepassword"), nErrCode );
-	if( false == sPfxFilePswd.empty() ) {
-		::strncpy( m_tagClientRunParam.szPfxFilePasswrod, sPfxFilePswd.c_str(), sPfxFilePswd.length() );
-	}
+	m_tagClientRunParam.bSSL = false;
 	int	nDetailLog = oIniFile.getIntValue( std::string("ServerIO"), std::string("isdetaillog"), nErrCode );
 	m_tagClientRunParam.bDetailLog = nDetailLog==1?true:false;
 	m_tagClientRunParam.lpOnError = OnError;

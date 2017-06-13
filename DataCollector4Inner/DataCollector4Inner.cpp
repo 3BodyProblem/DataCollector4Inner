@@ -91,7 +91,7 @@ int QuoCollector::Execute()
 
 void QuoCollector::Halt()
 {
-	m_oQuotationData.Destroy();
+	m_oQuotationData.Halt();
 }
 
 unsigned int QuoCollector::GetMarketID() const
@@ -121,7 +121,7 @@ int QuoCollector::RecoverQuotation()
 	}
 	else
 	{
-		m_oQuotationData.Destroy();
+		m_oQuotationData.Halt();
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "QuoCollector::RecoverQuotation() : overtime [> %d sec.], errorcode=%d", nSec, nErrorCode );
 		return -2;
 	}

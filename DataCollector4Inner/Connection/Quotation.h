@@ -94,17 +94,22 @@ public:
 	~MkQuotation();
 
 	/**
-	 * @brief				释放ctp行情接口
-	 */
-	int						Destroy();
-
-	/**
 	 * @brief				初始化ctp行情接口
 	 * @return				>=0			成功
 							<0			错误
 	 * @note				整个对象的生命过程中，只会启动时真实的调用一次
 	 */
 	int						Activate() throw(std::runtime_error);
+
+	/**
+	 * @brief				释放ctp行情接口
+	 */
+	int						Destroy();
+
+	/**
+	 * @brief				暂停行情采集
+	 */
+	int						Halt();
 
 	/**
 	 * @brief				获取会话状态信息

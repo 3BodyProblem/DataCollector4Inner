@@ -86,43 +86,53 @@ CTPWorkStatus& MkQuotation::GetWorkStatus()
 
 int MkQuotation::Activate()
 {
+	int									nErrorCode = 0;
+	std::string							sIP = "";
+	unsigned int						nPort = 0;
+
 	if( GetWorkStatus() == ET_SS_UNACTIVE )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : ............ Link Session Activating............" );
-		std::string		sIP = "";
-		unsigned int	nPort = 0;
-		int				nErrorCode = 0;
+		const tagMBPClientIO_RunParam&		refRunParam = Configuration::GetConfig().GetRunParam();
 
 		Destroy();
-		if( false == Configuration::GetConfig().GetHQConfList().GetConfig( sIP, nPort ) )
+		if( (nErrorCode = m_oCommIO.Instance( &refRunParam )) < 0 )
 		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : invalid data source connection configuration." );
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : error occur while initializing Communication Plugin, errorcode=%d", nErrorCode );
 			return -1;
 		}
 
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : Communication Plugin Version 【%d】", m_oCommIO.GetVersion() );
-		if( (nErrorCode = m_oCommIO.Instance( &(Configuration::GetConfig().GetRunParam()) )) < 0 )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : error occur while initializing Communication Plugin, errorcode=%d", nErrorCode );
-			return -2;
-		}
-
 		if( NULL == (m_pCommIOApi = m_oCommIO.CreateMBPClientCommIO_Api()) )
 		{
 			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : error occur while creating Link control api pointer(NULL)" );
-			return -3;
+			return -2;
 		}
 
 		m_pCommIOApi->RegisterSpi( this );
-		if( (nErrorCode = m_pCommIOApi->Connect( sIP.c_str(), nPort )) < 0 )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 establish connection, errorcode = %d", nErrorCode );
-			return -4;
-		}
-
 		m_oWorkStatus = ET_SS_DISCONNECTED;				///< 更新MkQuotation会话的状态::GetStatus()
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : ............ MkQuotation Activated!.............." );
 	}
+
+	if( false == Configuration::GetConfig().GetHQConfList().GetConfig( sIP, nPort ) )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : invalid data source connection configuration." );
+		return -3;
+	}
+
+	if( (nErrorCode = m_pCommIOApi->Connect( sIP.c_str(), nPort )) < 0 )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 establish connection, errorcode = %d", nErrorCode );
+		return -4;
+	}
+
+	return 0;
+}
+
+int MkQuotation::Halt()
+{
+	m_pCommIOApi->Disconnect();
+	m_oWorkStatus = ET_SS_DISCONNECTED;
 
 	return 0;
 }
@@ -207,7 +217,6 @@ void MkQuotation::OnDisconnect()
 
 void MkQuotation::OnDestory()
 {
-	Destroy();
 }
 
 bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize )
@@ -224,6 +233,12 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 		return false;
 	}
 
+	if( 100 != usMessageNo )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnRecvData() : an unknow message no (%u)", usMessageNo );
+		return false;
+	}
+
 //	QuotationSync::CTPSyncSaver::GetHandle().SaveSnapData( *pMarketData );
 
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
@@ -237,23 +252,32 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 	unsigned int				nMsgCount = pFrameHead->nMsgCount;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
+	if( 0 == m_nMarketID )
+	{
+		m_nMarketID = pFrameHead->nMarketID;
+	}
+
 	for( unsigned int nOffset = 0; nOffset < nBodyLen; )
 	{
 		const tagBlockHead*		pMsg = (tagBlockHead*)(pBody+nOffset);
+		char*					pMsgBody = (char*)(pBody+nOffset+sizeof(tagBlockHead));
 
-		if( m_oWorkStatus == ET_SS_WORKING )
+		if( 0 != pMsg->nDataType )		///< MsgID == 0 是心跳包
 		{
-			QuoCollector::GetCollector()->OnData( pMsg->nDataType, (char*)pMsg, pMsg->nDataLen, false );
-		}
-		else
-		{
-			bool	bLastImageFlag = ( (nOffset+((tagBlockHead*)(pBody+nOffset))->nDataLen+sizeof(tagBlockHead) >=nBodyLen) && (100==usFunctionID) ) ? true : false;
-
-			QuoCollector::GetCollector()->OnImage( pMsg->nDataType, (char*)pMsg, pMsg->nDataLen, bLastImageFlag );
-
-			if( true == bLastImageFlag )
+			if( m_oWorkStatus == ET_SS_WORKING )
 			{
-				m_oWorkStatus = ET_SS_WORKING;	///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
+				QuoCollector::GetCollector()->OnData( pMsg->nDataType, pMsgBody, pMsg->nDataLen, false );
+			}
+			else
+			{
+				bool	bLastImageFlag = ( (nOffset+((tagBlockHead*)(pBody+nOffset))->nDataLen+sizeof(tagBlockHead) >=nBodyLen) && (100==usFunctionID) ) ? true : false;
+
+				QuoCollector::GetCollector()->OnImage( pMsg->nDataType, pMsgBody, pMsg->nDataLen, bLastImageFlag );
+
+				if( true == bLastImageFlag )
+				{
+					m_oWorkStatus = ET_SS_WORKING;	///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
+				}
 			}
 		}
 
