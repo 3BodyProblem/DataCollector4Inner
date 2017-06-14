@@ -3,26 +3,26 @@
 #include "../DataCollector4Inner.h"
 
 
-CTPWorkStatus::CTPWorkStatus()
+WorkStatus::WorkStatus()
 : m_eWorkStatus( ET_SS_UNACTIVE )
 {
 }
 
-CTPWorkStatus::CTPWorkStatus( const CTPWorkStatus& refStatus )
+WorkStatus::WorkStatus( const WorkStatus& refStatus )
 {
 	CriticalLock	section( m_oLock );
 
 	m_eWorkStatus = refStatus.m_eWorkStatus;
 }
 
-CTPWorkStatus::operator enum E_SS_Status()
+WorkStatus::operator enum E_SS_Status()
 {
 	CriticalLock	section( m_oLock );
 
 	return m_eWorkStatus;
 }
 
-std::string& CTPWorkStatus::CastStatusStr( enum E_SS_Status eStatus )
+std::string& WorkStatus::CastStatusStr( enum E_SS_Status eStatus )
 {
 	static std::string	sUnactive = "未激活";
 	static std::string	sDisconnected = "断开状态";
@@ -51,13 +51,13 @@ std::string& CTPWorkStatus::CastStatusStr( enum E_SS_Status eStatus )
 	}
 }
 
-CTPWorkStatus&	CTPWorkStatus::operator= ( enum E_SS_Status eWorkStatus )
+WorkStatus&	WorkStatus::operator= ( enum E_SS_Status eWorkStatus )
 {
 	CriticalLock	section( m_oLock );
 
 	if( m_eWorkStatus != eWorkStatus )
 	{
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "CTPWorkStatus::operator=() : Exchange CTP Session Status [%s]->[%s]"
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "WorkStatus::operator=() : Exchange Session Status [%s]->[%s]"
 											, CastStatusStr(m_eWorkStatus).c_str(), CastStatusStr(eWorkStatus).c_str() );
 				
 		m_eWorkStatus = eWorkStatus;
@@ -79,16 +79,33 @@ MkQuotation::~MkQuotation()
 	Destroy();
 }
 
-CTPWorkStatus& MkQuotation::GetWorkStatus()
+WorkStatus& MkQuotation::GetWorkStatus()
 {
 	return m_oWorkStatus;
+}
+
+int MkQuotation::Destroy()
+{
+	if( NULL != m_pCommIOApi )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroying .............." );
+
+		m_oWorkStatus = ET_SS_UNACTIVE;	///< 更新MkQuotation会话的状态0
+		m_pCommIOApi->RegisterSpi( NULL );
+		m_pCommIOApi->Disconnect();
+		m_pCommIOApi->Release();
+		m_pCommIOApi = NULL;
+		m_oCommIO.Release();
+
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroyed! .............." );
+	}
+
+	return 0;
 }
 
 int MkQuotation::Activate()
 {
 	int									nErrorCode = 0;
-	std::string							sIP = "";
-	unsigned int						nPort = 0;
 
 	if( GetWorkStatus() == ET_SS_UNACTIVE )
 	{
@@ -111,49 +128,47 @@ int MkQuotation::Activate()
 
 		m_pCommIOApi->RegisterSpi( this );
 		m_oWorkStatus = ET_SS_DISCONNECTED;				///< 更新MkQuotation会话的状态::GetStatus()
+		if( 0 != (nErrorCode=RecoverQuotation()) )
+		{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 establish connection." );
+			return -3;
+		}
+
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : ............ MkQuotation Activated!.............." );
 	}
 
-	if( false == Configuration::GetConfig().GetHQConfList().GetConfig( sIP, nPort ) )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : invalid data source connection configuration." );
-		return -3;
-	}
+	return 0;
+}
 
-	if( (nErrorCode = m_pCommIOApi->Connect( sIP.c_str(), nPort )) < 0 )
+int MkQuotation::RecoverQuotation()
+{
+	if( m_oWorkStatus == ET_SS_DISCONNECTED )
 	{
-		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 establish connection, errorcode = %d", nErrorCode );
-		return -4;
+		int									nErrorCode = 0;
+		std::string							sIP = "";
+		unsigned int						nPort = 0;
+
+		if( false == Configuration::GetConfig().GetHQConfList().GetConfig( sIP, nPort ) )
+		{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::RecoverQuotation() : invalid data source connection configuration." );
+			return -1;
+		}
+
+		if( (nErrorCode = m_pCommIOApi->Connect( sIP.c_str(), nPort )) < 0 )
+		{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::RecoverQuotation() : failed 2 establish connection, errorcode = %d", nErrorCode );
+			return -2;
+		}
+
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : connection --> %s : %u", sIP.c_str(), nPort );
 	}
 
 	return 0;
 }
 
-int MkQuotation::Halt()
+MBPClientCommIO& MkQuotation::GetCommIO()
 {
-	m_pCommIOApi->Disconnect();
-	m_oWorkStatus = ET_SS_DISCONNECTED;
-
-	return 0;
-}
-
-int MkQuotation::Destroy()
-{
-	if( NULL != m_pCommIOApi )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroying .............." );
-
-		m_oWorkStatus = ET_SS_UNACTIVE;	///< 更新MkQuotation会话的状态0
-		m_pCommIOApi->RegisterSpi( NULL );
-		m_pCommIOApi->Disconnect();
-		m_pCommIOApi->Release();
-		m_pCommIOApi = NULL;
-		m_oCommIO.Release();
-
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroyed! .............." );
-	}
-
-	return 0;
+	return m_oCommIO;
 }
 
 unsigned int MkQuotation::GetMarketID() const

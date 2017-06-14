@@ -32,10 +32,9 @@ bool LinkConfig::GetConfig( std::string& sIP, unsigned int& nPort )
 	return true;
 }
 
-
-void OnError( const char* szErrString )
+void OnClientCommIOError( const char* szErrString )
 {
-	QuoCollector::GetCollector()->OnLog( TLV_DETAIL, "MBPClientCommIO::OnError() : error info : %s", szErrString );
+	QuoCollector::GetCollector()->OnLog( TLV_DETAIL, "MBPClientCommIO::OnError() : [DETAIL] %s", szErrString );
 }
 
 ///< 解析并加载服务器连接登录配置信息
@@ -130,7 +129,7 @@ int Configuration::Initialize()
 	m_tagClientRunParam.bSSL = false;
 	int	nDetailLog = oIniFile.getIntValue( std::string("ServerIO"), std::string("isdetaillog"), nErrCode );
 	m_tagClientRunParam.bDetailLog = nDetailLog==1?true:false;
-	m_tagClientRunParam.lpOnError = OnError;
+	m_tagClientRunParam.lpOnError = OnClientCommIOError;
 
 	///< 设置： 快照落盘目录(含文件名)
 	m_sDumpFileFolder = oIniFile.getStringValue( std::string("SRV"), std::string("DumpFolder"), nErrCode );

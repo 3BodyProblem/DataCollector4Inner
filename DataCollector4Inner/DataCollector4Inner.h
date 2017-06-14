@@ -25,7 +25,10 @@ enum T_LOG_LEVEL
 
 /**
  * @class						QuoCollector
- * @brief						行情数据采集模块主干类
+ * @brief						自适合行情数据采集模块主干类
+ * @detail						本模块适合于任何市场的行情数据结构;
+								&
+								作为传输模块将保持任何时间的连接状态（除了初始化过程时段）
  * @date						2017/5/15
  * @author						barry
  */
@@ -36,12 +39,8 @@ protected:
 
 public:
 	/**
-	 * @brief					获取数据采集对象的单键引用
-	 */
-	static QuoCollector&		GetCollector();
-
-	/**
 	 * @brief					初始化数据采集器
+	 * @detail					加载配置 + 设置消息回调 + 激活对上的通讯模块 + 启动断开重连线程
 	 * @param[in]				pIDataHandle				行情回调接口
 	 * @return					==0							初始化成功
 								!=0							出错
@@ -55,36 +54,45 @@ public:
 
 public:
 	/**
-	 * @brief					重载返回行情回调接口地址
-	 * @return					行情回调接口指针地址
-	 */
-	I_DataHandle*				operator->();
-
-	/**
-	 * @brief					从本地文件或行情端口重新恢复加载所有行情数据
+	 * @brief					重新连接请求行情快照和推送
 	 * @return					==0							成功
 								!=0							出错
 	 */
 	int							RecoverQuotation();
 
 	/**
-	 * @brief					取得采集模块的当前状态
-	 */
-	enum E_SS_Status			GetCollectorStatus();
-
-	/**
-	 * @brief					停止
+	 * @brief					暂时停止自动自动重连功能
 	 */
 	void						Halt();
+
+public:
+	/**
+	 * @brief					取得采集模块的当前状态
+ 	 * @param[out]				pszStatusDesc				返回出状态描述串
+	 * @param[in,out]			nStrLen						输入描述串缓存长度，输出描述串有效内容长度
+	 * @return					返回模块当前状态值
+	 */
+	enum E_SS_Status			GetCollectorStatus( char* pszStatusDesc, unsigned int& nStrLen );
 
 	/**
 	 * @brief					获取市场编号
 	 */
 	unsigned int				GetMarketID() const;
 
+	/**
+	 * @brief					获取数据采集对象的单键引用
+	 */
+	static QuoCollector&		GetCollector();
+
+	/**
+	 * @brief					重载返回行情回调接口地址
+	 * @return					行情回调接口指针地址
+	 */
+	I_DataHandle*				operator->();
+
 protected:
 	/**
-	 * @brief					任务函数(内循环)
+	 * @brief					任务函数(内循环，自动断开重连上级行情源)
 	 * @return					==0					成功
 								!=0					失败
 	 */
@@ -92,6 +100,7 @@ protected:
 
 protected:
 	I_DataHandle*				m_pCbDataHandle;			///< 数据(行情/日志回调接口)
+	bool						m_bAutoReconnect;			///< 是否自动重连
 	MkQuotation					m_oQuotationData;			///< 实时行情数据会话对象
 };
 
@@ -123,8 +132,11 @@ extern "C"
 
 	/**
 	 * @brief								获取模块的当前状态
+	 * @param[out]							pszStatusDesc				返回出状态描述串
+	 * @param[in,out]						nStrLen						输入描述串缓存长度，输出描述串有效内容长度
+	 * @return								返回模块当前状态值
 	 */
-	__declspec(dllexport) int __stdcall		GetStatus();
+	__declspec(dllexport) int __stdcall		GetStatus( char* pszStatusDesc, unsigned int& nStrLen );
 
 	/**
 	 * @brief								获取市场编号

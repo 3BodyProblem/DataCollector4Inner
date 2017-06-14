@@ -44,11 +44,11 @@ typedef struct
 
 
 /**
- * @class			CTPWorkStatus
- * @brief			CTP工作状态管理
+ * @class			WorkStatus
+ * @brief			工作状态管理
  * @author			barry
  */
-class CTPWorkStatus
+class WorkStatus
 {
 public:
 	/**
@@ -61,14 +61,14 @@ public:
 	 * @brief			构造
 	 * @param			eMkID			市场编号
 	 */
-	CTPWorkStatus();
-	CTPWorkStatus( const CTPWorkStatus& refStatus );
+	WorkStatus();
+	WorkStatus( const WorkStatus& refStatus );
 
 	/**
 	 * @brief			赋值重载
 						每次值变化，将记录日志
 	 */
-	CTPWorkStatus&		operator= ( enum E_SS_Status eWorkStatus );
+	WorkStatus&			operator= ( enum E_SS_Status eWorkStatus );
 
 	/**
 	 * @brief			重载转换符
@@ -83,7 +83,7 @@ private:
 
 /**
  * @class			MkQuotation
- * @brief			CTP会话管理对象
+ * @brief			会话管理对象
  * @detail			封装了针对商品期货期权各市场的初始化、管理控制等方面的方法
  * @author			barry
  */
@@ -93,6 +93,7 @@ public:
 	MkQuotation();
 	~MkQuotation();
 
+public:
 	/**
 	 * @brief				初始化ctp行情接口
 	 * @return				>=0			成功
@@ -107,19 +108,27 @@ public:
 	int						Destroy();
 
 	/**
-	 * @brief				暂停行情采集
+	 * @brief				重新连接请求行情快照和推送
+	 * @return				==0							成功
+							!=0							出错
 	 */
-	int						Halt();
+	int						RecoverQuotation();
 
+public:
 	/**
 	 * @brief				获取会话状态信息
 	 */
-	CTPWorkStatus&			GetWorkStatus();
+	WorkStatus&				GetWorkStatus();
 
 	/**
 	 * @brief				获取市场编号
 	 */
 	unsigned int			GetMarketID() const;
+
+	/**
+	 * @brief				获取端口封装对象
+	 */
+	MBPClientCommIO&		GetCommIO();
 
 protected:///< CThostFtdcMdSpi的回调接口
 	virtual void			OnConnectSuc();	//连接成功消息响应函数
@@ -161,7 +170,7 @@ private:
 
 private:
 	unsigned int			m_nMarketID;			///< 市场编号
-	CTPWorkStatus			m_oWorkStatus;			///< 工作状态
+	WorkStatus				m_oWorkStatus;			///< 工作状态
 };
 
 

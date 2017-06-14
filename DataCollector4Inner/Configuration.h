@@ -85,7 +85,7 @@ public:
 private:
 	tagMBPClientIO_RunParam			m_tagClientRunParam;	///< API运行参数
 	std::string						m_sDumpFileFolder;		///< 快照落盘路径(需要有文件名)
-	LinkConfig						m_oHQConfigList;		///< CTP行情服务器连接配置列表
+	LinkConfig						m_oHQConfigList;		///< 行情服务器连接配置列表
 };
 
 
@@ -93,8 +93,6 @@ private:
 
 
 #endif
-
-
 
 
 
