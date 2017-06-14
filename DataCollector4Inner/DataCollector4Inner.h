@@ -130,6 +130,11 @@ extern "C"
 	__declspec(dllexport) int __stdcall		RecoverQuotation();
 
 	/**
+	 * @brief								暂时数据采集
+	 */
+	__declspec(dllexport) void __stdcall	HaltQuotation();
+
+	/**
 	 * @brief								获取模块的当前状态
 	 * @param[out]							pszStatusDesc				返回出状态描述串
 	 * @param[in,out]						nStrLen						输入描述串缓存长度，输出描述串有效内容长度
@@ -141,6 +146,11 @@ extern "C"
 	 * @brief								获取市场编号
 	 */
 	__declspec(dllexport) int __stdcall		GetMarketID();
+
+	/**
+	 * @brief								是否为行情传输的采集器
+	 */
+	__declspec(dllexport) bool __stdcall	IsProxy();
 
 	/**
 	 * @brief								单元测试导出函数

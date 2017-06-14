@@ -42,12 +42,6 @@ int QuoCollector::Initialize( I_DataHandle* pIDataHandle )
 		return -3;
 	}
 
-	if( 0 != (nErrorCode = SimpleTask::Activate()) )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "QuoCollector::Initialize() : failed 2 initialize task thread, errorcode=%d", nErrorCode );
-		return -4;
-	}
-
 	return 0;
 }
 
@@ -70,34 +64,6 @@ I_DataHandle* QuoCollector::operator->()
 
 int QuoCollector::Execute()
 {
-	QuoCollector::GetCollector()->OnLog( TLV_INFO, "QuoCollector::Execute() : enter into thread func ......" );
-
-	int				nErrorCode = 0;
-	WorkStatus&		refStatus = m_oQuotationData.GetWorkStatus();
-
-	while( true == IsAlive() )
-	{
-		try
-		{
-			SimpleTask::Sleep( 3000 );
-
-			if( refStatus == ET_SS_DISCONNECTED )
-			{
-				m_oQuotationData.RecoverQuotation();
-			}
-		}
-		catch( std::exception& err )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_INFO, "QuoCollector::Execute() : exception : %s", err.what() );
-		}
-		catch( ... )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_INFO, "QuoCollector::Execute() : unknow exception" );
-		}
-	}
-
-	QuoCollector::GetCollector()->OnLog( TLV_INFO, "QuoCollector::Execute() : exit thread func ......" );
-
 	return 0;
 }
 
@@ -141,7 +107,7 @@ enum E_SS_Status QuoCollector::GetCollectorStatus( char* pszStatusDesc, unsigned
 {
 	tagMBPClientIO_Status	tagStatus = { 0 };
 	Configuration&			refCnf = Configuration::GetConfig();
-	WorkStatus&			refStatus = m_oQuotationData.GetWorkStatus();
+	WorkStatus&				refStatus = m_oQuotationData.GetWorkStatus();
 	std::string&			sStatusDesc = WorkStatus::CastStatusStr( (enum E_SS_Status)refStatus );
 
 	if( refStatus == ET_SS_UNACTIVE )
@@ -181,6 +147,11 @@ extern "C"
 	__declspec(dllexport) void __stdcall HaltQuotation()
 	{
 		QuoCollector::GetCollector().Halt();
+	}
+
+	__declspec(dllexport) bool __stdcall IsProxy()
+	{
+		return true;
 	}
 
 	__declspec(dllexport) int __stdcall	GetStatus( char* pszStatusDesc, unsigned int& nStrLen )

@@ -59,7 +59,7 @@ WorkStatus&	WorkStatus::operator= ( enum E_SS_Status eWorkStatus )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "WorkStatus::operator=() : Exchange Session Status [%s]->[%s]"
 											, CastStatusStr(m_eWorkStatus).c_str(), CastStatusStr(eWorkStatus).c_str() );
-				
+
 		m_eWorkStatus = eWorkStatus;
 	}
 
