@@ -128,11 +128,6 @@ int MkQuotation::Activate()
 
 		m_pCommIOApi->RegisterSpi( this );
 		m_oWorkStatus = ET_SS_DISCONNECTED;				///< 更新MkQuotation会话的状态::GetStatus()
-		if( 0 != (nErrorCode=RecoverQuotation()) )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 establish connection." );
-			return -3;
-		}
 
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : ............ MkQuotation Activated!.............." );
 	}

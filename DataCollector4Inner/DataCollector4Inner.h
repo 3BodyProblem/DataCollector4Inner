@@ -100,7 +100,6 @@ protected:
 
 protected:
 	I_DataHandle*				m_pCbDataHandle;			///< 数据(行情/日志回调接口)
-	bool						m_bAutoReconnect;			///< 是否自动重连
 	MkQuotation					m_oQuotationData;			///< 实时行情数据会话对象
 };
 

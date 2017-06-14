@@ -8,7 +8,7 @@
 
 
 QuoCollector::QuoCollector()
- : m_pCbDataHandle( NULL ), m_bAutoReconnect( false )
+ : m_pCbDataHandle( NULL )
 {
 }
 
@@ -53,7 +53,6 @@ int QuoCollector::Initialize( I_DataHandle* pIDataHandle )
 
 void QuoCollector::Release()
 {
-	m_bAutoReconnect = false;
 	SimpleTask::StopThread();
 	SimpleTask::Join( 1000*3 );
 //	m_pCbDataHandle = NULL;
@@ -73,7 +72,8 @@ int QuoCollector::Execute()
 {
 	QuoCollector::GetCollector()->OnLog( TLV_INFO, "QuoCollector::Execute() : enter into thread func ......" );
 
-	int			nErrorCode = 0;
+	int				nErrorCode = 0;
+	WorkStatus&		refStatus = m_oQuotationData.GetWorkStatus();
 
 	while( true == IsAlive() )
 	{
@@ -81,14 +81,9 @@ int QuoCollector::Execute()
 		{
 			SimpleTask::Sleep( 3000 );
 
-			if( true == m_bAutoReconnect )
+			if( refStatus == ET_SS_DISCONNECTED )
 			{
-				WorkStatus&		refStatus = m_oQuotationData.GetWorkStatus();
-
-				if( refStatus == ET_SS_DISCONNECTED )
-				{
-					m_oQuotationData.RecoverQuotation();
-				}
+				m_oQuotationData.RecoverQuotation();
 			}
 		}
 		catch( std::exception& err )
@@ -113,8 +108,6 @@ unsigned int QuoCollector::GetMarketID() const
 
 void QuoCollector::Halt()
 {
-	m_bAutoReconnect = false;
-	m_oQuotationData.Halt();
 }
 
 int QuoCollector::RecoverQuotation()
@@ -128,8 +121,6 @@ int QuoCollector::RecoverQuotation()
 		return -1;
 	}
 
-	m_bAutoReconnect = true;			///< 设置自动重连标识
-
 	for( nSec = 0; nSec < 60 && ET_SS_WORKING != m_oQuotationData.GetWorkStatus(); nSec++ )
 	{
 		SimpleTask::Sleep( 1000 * 1 );
@@ -141,7 +132,6 @@ int QuoCollector::RecoverQuotation()
 	}
 	else
 	{
-		m_oQuotationData.Halt();
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "QuoCollector::RecoverQuotation() : overtime [> %d sec.], errorcode=%d", nSec, nErrorCode );
 		return -2;
 	}
