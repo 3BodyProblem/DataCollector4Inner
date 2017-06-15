@@ -47,9 +47,6 @@ int QuoCollector::Initialize( I_DataHandle* pIDataHandle )
 
 void QuoCollector::Release()
 {
-	SimpleTask::StopThread();
-	SimpleTask::Join( 1000*3 );
-//	m_pCbDataHandle = NULL;
 }
 
 I_DataHandle* QuoCollector::operator->()
@@ -62,11 +59,6 @@ I_DataHandle* QuoCollector::operator->()
 	return m_pCbDataHandle;
 }
 
-int QuoCollector::Execute()
-{
-	return 0;
-}
-
 unsigned int QuoCollector::GetMarketID() const
 {
 	return m_oQuotationData.GetMarketID();
@@ -74,6 +66,7 @@ unsigned int QuoCollector::GetMarketID() const
 
 void QuoCollector::Halt()
 {
+	m_oQuotationData.CloseConnection();
 }
 
 int QuoCollector::RecoverQuotation()
@@ -81,7 +74,7 @@ int QuoCollector::RecoverQuotation()
 	unsigned int	nSec = 0;
 	int				nErrorCode = 0;
 
-	if( 0 != (nErrorCode=m_oQuotationData.RecoverQuotation()) )
+	if( 0 != (nErrorCode=m_oQuotationData.Connect2Server()) )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "QuoCollector::RecoverQuotation() : failed 2 subscript quotation, errorcode=%d", nErrorCode );
 		return -1;
@@ -119,9 +112,9 @@ enum E_SS_Status QuoCollector::GetCollectorStatus( char* pszStatusDesc, unsigned
 		m_oQuotationData.GetCommIO().GetStatus( &tagStatus );
 	}
 
-	nStrLen = ::sprintf( pszStatusDesc, "模块名=自适应行情代理,市场编号=%u,快照目录=%s,连接状态=%s,发送缓冲占比=%u(％),内存池占比=%u(％)"
+	nStrLen = ::sprintf( pszStatusDesc, "模块名=自适应行情代理,市场编号=%u,快照目录=%s,连接状态=%s,发送缓冲占比=%u(％),内存池占比=%u(％),接收频率=%u(次/秒),发送频率=%u(次/秒),接收带宽=%u(bps),接收总量=%I64d(字节)"
 		, m_oQuotationData.GetMarketID(), refCnf.GetDumpFolder().c_str(), sStatusDesc.c_str()
-		, tagStatus.uiSendBufPercent, tagStatus.uiMemoryPoolPercent );
+		, tagStatus.uiSendBufPercent, tagStatus.uiMemoryPoolPercent, tagStatus.uiRecvFreq, tagStatus.uiSendFreq, tagStatus.uiRecvBandWidth, tagStatus.ui64RecvAmount );
 
 	return (enum E_SS_Status)(m_oQuotationData.GetWorkStatus());
 }

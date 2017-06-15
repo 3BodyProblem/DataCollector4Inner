@@ -131,7 +131,13 @@ int Configuration::Initialize()
 	m_tagClientRunParam.bDetailLog = nDetailLog==1?true:false;
 	m_tagClientRunParam.lpOnError = OnClientCommIOError;
 
-	///< 设置： 快照落盘目录(含文件名)
+	///< 设置： 行情落盘目录
+	int nIsDump = oIniFile.getIntValue( std::string("SRV"), std::string("dump"), nErrCode );
+	if( 0 != nErrCode ) {
+		m_bDumpFile = true;
+	} else {
+		m_bDumpFile = (1==nIsDump) ? true : false;
+	}
 	m_sDumpFileFolder = oIniFile.getStringValue( std::string("SRV"), std::string("DumpFolder"), nErrCode );
 	if( 0 != nErrCode )	{
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : shutdown dump function." );
@@ -147,6 +153,11 @@ int Configuration::Initialize()
 const std::string& Configuration::GetDumpFolder() const
 {
 	return m_sDumpFileFolder;
+}
+
+bool Configuration::IsDumpModel() const
+{
+	return m_bDumpFile;
 }
 
 LinkConfig& Configuration::GetHQConfList()

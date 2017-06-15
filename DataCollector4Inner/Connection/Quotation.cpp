@@ -91,10 +91,14 @@ int MkQuotation::Destroy()
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroying .............." );
 
 		m_oWorkStatus = ET_SS_UNACTIVE;	///< 更新MkQuotation会话的状态0
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : m_pCommIOApi->RegisterSpi( NULL )" );
 		m_pCommIOApi->RegisterSpi( NULL );
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : m_pCommIOApi->Disconnect()" );
 		m_pCommIOApi->Disconnect();
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : m_pCommIOApi->Release()" );
 		m_pCommIOApi->Release();
 		m_pCommIOApi = NULL;
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : m_oCommIO.Release()" );
 		m_oCommIO.Release();
 
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroyed! .............." );
@@ -135,7 +139,7 @@ int MkQuotation::Activate()
 	return 0;
 }
 
-int MkQuotation::RecoverQuotation()
+int MkQuotation::Connect2Server()
 {
 	if( m_oWorkStatus == ET_SS_DISCONNECTED )
 	{
@@ -145,20 +149,28 @@ int MkQuotation::RecoverQuotation()
 
 		if( false == Configuration::GetConfig().GetHQConfList().GetConfig( sIP, nPort ) )
 		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::RecoverQuotation() : invalid data source connection configuration." );
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Connect2Server() : invalid data source connection configuration." );
 			return -1;
 		}
 
 		if( (nErrorCode = m_pCommIOApi->Connect( sIP.c_str(), nPort )) < 0 )
 		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::RecoverQuotation() : failed 2 establish connection, errorcode = %d", nErrorCode );
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Connect2Server() : failed 2 establish connection, errorcode = %d", nErrorCode );
 			return -2;
 		}
 
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Activate() : connection --> %s : %u", sIP.c_str(), nPort );
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Connect2Server() : connection --> %s : %u", sIP.c_str(), nPort );
 	}
 
 	return 0;
+}
+
+void MkQuotation::CloseConnection()
+{
+	if( NULL != m_pCommIOApi )
+	{
+		m_pCommIOApi->Disconnect();
+	}
 }
 
 MBPClientCommIO& MkQuotation::GetCommIO()
@@ -175,26 +187,27 @@ int MkQuotation::PrepareDumpFile()
 {
 	if( GetWorkStatus() == ET_SS_LOGIN )			///< 登录成功后，执行订阅操作
 	{
-//		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : Creating ctp session\'s dump file ......" );
-
-		DateTime		oTodayDate;
-		char			pszTmpFile[128] = { 0 };			///< 准备行情数据落盘
-		unsigned int	nNowTime = DateTime::Now().TimeToLong();
-
-		oTodayDate.SetCurDateTime();
-		if( nNowTime > 40000 && nNowTime < 180000 ) {
-			::strcpy( pszTmpFile, "Quotation_day.dmp" );
-		} else if( nNowTime > 0 && nNowTime < 40000 ) {
-			oTodayDate -= (60*60*8);
-			::strcpy( pszTmpFile, "Quotation_nite.dmp" );
-		} else {
-			::strcpy( pszTmpFile, "Quotation_nite.dmp" );
+		if( false == Configuration::GetConfig().IsDumpModel() )
+		{
+			return 0;
 		}
-//		std::string		sDumpFile = GenFilePathByWeek( Configuration::GetConfig().GetDumpFolder().c_str(), pszTmpFile, oTodayDate.Now().DateToLong() );
-//		bool			bRet = QuotationSync::CTPSyncSaver::GetHandle().Init( sDumpFile.c_str(), DateTime::Now().DateToLong(), false );
 
-		m_oWorkStatus = ET_SS_INITIALIZING;		///< 更新MkQuotation会话的状态
-//		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : dump file created, result = %d", bRet );
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : Creating Quotation\'s dump file ......" );
+
+		char			pszTmpFile[128*2] = { 0 };	///< 准备行情数据落盘
+		::sprintf( pszTmpFile, "Quotation_%u_%u.dmp", DateTime::Now().DateToLong(), DateTime::Now().TimeToLong() );
+		std::string		sFilePath = JoinPath( Configuration::GetConfig().GetDumpFolder(), pszTmpFile );
+
+		m_oQuotDumper.Close();
+		if( false == m_oQuotDumper.Open( false, sFilePath.c_str(), DateTime::Now().DateToLong() ) )
+		{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::PrepareDumpFile() : failed 2 create quotation dump file" );
+			return -1;
+		}
+
+		m_oWorkStatus = ET_SS_INITIALIZING;			///< 更新MkQuotation会话的状态
+
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : dump file created, result = %s", sFilePath.c_str() );
 
 		return 0;
 	}
@@ -207,6 +220,7 @@ void MkQuotation::OnConnectSuc()
 	QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnConnectSuc() : connection established." );
 
 	m_oWorkStatus = ET_SS_CONNECTED;			///< 更新MkQuotation会话的状态
+
 	m_oWorkStatus = ET_SS_LOGIN;				///< 更新MkQuotation会话的状态
 	PrepareDumpFile();							///< 预备落盘文件的句柄
 }
@@ -249,7 +263,10 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 		return false;
 	}
 
-//	QuotationSync::CTPSyncSaver::GetHandle().SaveSnapData( *pMarketData );
+	if( true == Configuration::GetConfig().IsDumpModel() )
+	{
+		m_oQuotDumper.Write( lpData, uiSize );
+	}
 
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
 }

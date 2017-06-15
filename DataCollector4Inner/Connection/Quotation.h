@@ -6,6 +6,7 @@
 #include <set>
 #include <string>
 #include <stdexcept>
+#include "DataDump.h"
 #include "../Configuration.h"
 #include "../Infrastructure/Lock.h"
 #include "../Infrastructure/DateTime.h"
@@ -93,7 +94,7 @@ public:
 	MkQuotation();
 	~MkQuotation();
 
-public:
+public:///< 构建接口
 	/**
 	 * @brief				初始化ctp行情接口
 	 * @return				>=0			成功
@@ -107,14 +108,20 @@ public:
 	 */
 	int						Destroy();
 
+public:///< 行情获取接口
 	/**
 	 * @brief				重新连接请求行情快照和推送
 	 * @return				==0							成功
 							!=0							出错
 	 */
-	int						RecoverQuotation();
+	int						Connect2Server();
 
-public:
+	/**
+	 * @brief				断开连接
+	 */
+	void					CloseConnection();
+
+public:///< 功能函数
 	/**
 	 * @brief				获取会话状态信息
 	 */
@@ -131,10 +138,25 @@ public:
 	MBPClientCommIO&		GetCommIO();
 
 protected:///< CThostFtdcMdSpi的回调接口
-	virtual void			OnConnectSuc();	//连接成功消息响应函数
-	virtual void			OnConnectFal();	//连接失败消息响应函数
-	virtual void			OnDisconnect();	//连接断开消息响应函数
-	virtual void			OnDestory();	//关联API被销毁
+	/**
+	 * @brief				连接成功消息回调
+	 */
+	virtual void			OnConnectSuc();
+
+	/**
+	 * @brief				连接失败消息回调
+	 */
+	virtual void			OnConnectFal();
+
+	/**
+	 * @brief				连接断开消息回调
+	 */
+	virtual void			OnDisconnect();
+
+	/**
+	 * @brief				关联API被销毁消息回调
+	 */
+	virtual void			OnDestory();
 
 	/**
 	 * @brief				收到数据消息响应函数
@@ -147,7 +169,7 @@ protected:///< CThostFtdcMdSpi的回调接口
 	 */
 	virtual bool			OnRecvData( unsigned short usMessageNo, unsigned short usFunctionID, bool bErrorFlag, const char* lpData, unsigned int uiSize );
 
-protected:
+protected:///< 收到的行情数据处理方法
 	/** 
 	 * @brief				刷数据到发送缓存
  	 * @param[in]			usMessageNo				消息ID
@@ -171,13 +193,13 @@ private:
 private:
 	unsigned int			m_nMarketID;			///< 市场编号
 	WorkStatus				m_oWorkStatus;			///< 工作状态
+	MemoDumper<char>		m_oQuotDumper;			///< 行情落盘对象
 };
 
 
 
 
 #endif
-
 
 
 

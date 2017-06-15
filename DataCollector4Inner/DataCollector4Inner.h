@@ -23,6 +23,9 @@ enum T_LOG_LEVEL
 };
 
 
+///< ------------------------------------------------------------------------------------------------------
+
+
 /**
  * @class						QuoCollector
  * @brief						自适合行情数据采集模块主干类
@@ -32,12 +35,12 @@ enum T_LOG_LEVEL
  * @date						2017/5/15
  * @author						barry
  */
-class QuoCollector : public SimpleTask
+class QuoCollector
 {
 protected:
 	QuoCollector();
 
-public:
+public:///< 构建接口
 	/**
 	 * @brief					初始化数据采集器
 	 * @detail					加载配置 + 设置消息回调 + 激活对上的通讯模块 + 启动断开重连线程
@@ -52,20 +55,21 @@ public:
 	 */
 	void						Release();
 
-public:
+public:///< 调试接口
 	/**
-	 * @brief					重新连接请求行情快照和推送
+	 * @brief					重新socket连接请求行情快照和推送
+	 * @note					是一个同步的函数，在行情初始化完成后才会返回
 	 * @return					==0							成功
 								!=0							出错
 	 */
 	int							RecoverQuotation();
 
 	/**
-	 * @brief					暂时停止自动自动重连功能
+	 * @brief					断开行情源socket连接
 	 */
 	void						Halt();
 
-public:
+public:///< 功能函数
 	/**
 	 * @brief					取得采集模块的当前状态
  	 * @param[out]				pszStatusDesc				返回出状态描述串
@@ -91,20 +95,12 @@ public:
 	I_DataHandle*				operator->();
 
 protected:
-	/**
-	 * @brief					任务函数(内循环，自动断开重连上级行情源)
-	 * @return					==0					成功
-								!=0					失败
-	 */
-	virtual int					Execute();
-
-protected:
 	I_DataHandle*				m_pCbDataHandle;			///< 数据(行情/日志回调接口)
 	MkQuotation					m_oQuotationData;			///< 实时行情数据会话对象
 };
 
 
-
+///< ------------------------------------------------------------------------------------------------------
 
 
 /**
@@ -116,6 +112,9 @@ extern "C"
 {
 	/**
 	 * @brief								初始化数据采集模块
+	 * @param[in]							pIDataHandle				行情功能回调
+	 * @return								==0							初始化成功
+											!=							出错
 	 */
 	__declspec(dllexport) int __stdcall		Initialize( I_DataHandle* pIDataHandle );
 
@@ -126,6 +125,9 @@ extern "C"
 
 	/**
 	 * @brief								重新初始化并加载行情数据
+	 * @note								是一个同步的函数，在行情初始化完成后才会返回
+ 	 * @return								==0							成功
+											!=0							出错
 	 */
 	__declspec(dllexport) int __stdcall		RecoverQuotation();
 
@@ -144,11 +146,14 @@ extern "C"
 
 	/**
 	 * @brief								获取市场编号
+	 * @return								市场ID
 	 */
 	__declspec(dllexport) int __stdcall		GetMarketID();
 
 	/**
 	 * @brief								是否为行情传输的采集器
+	 * @return								true						是传输模块的行情采集插件
+											false						顶层源的行情采集插件
 	 */
 	__declspec(dllexport) bool __stdcall	IsProxy();
 

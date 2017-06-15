@@ -68,23 +68,29 @@ public:
 
 public:
 	/**
+	 * @brief						获取各市场行情链路配置表
+	 */
+	LinkConfig&						GetHQConfList();
+
+	/**
 	 * @brief						运行参数
 	 */
 	const tagMBPClientIO_RunParam&	GetRunParam() const;
 
 	/**
-	 * @brief						取得快照落盘目录(含文件名)
+	 * @brief						取得行情数据落盘目录(含文件名)
 	 */
 	const std::string&				GetDumpFolder() const;
 
 	/**
-	 * @brief						获取各市场行情链路配置表
+	 * @brief						是否需要落盘行情
 	 */
-	LinkConfig&						GetHQConfList();
+	bool							IsDumpModel() const;
 
 private:
 	tagMBPClientIO_RunParam			m_tagClientRunParam;	///< API运行参数
-	std::string						m_sDumpFileFolder;		///< 快照落盘路径(需要有文件名)
+	bool							m_bDumpFile;			///< 是否落盘
+	std::string						m_sDumpFileFolder;		///< 行情落盘路径
 	LinkConfig						m_oHQConfigList;		///< 行情服务器连接配置列表
 };
 
