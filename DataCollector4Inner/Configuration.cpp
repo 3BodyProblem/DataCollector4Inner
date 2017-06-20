@@ -9,7 +9,7 @@ HMODULE				g_oModule = NULL;
 
 
 LinkConfig::LinkConfig()
- : m_nDataPos( 0 )
+ : m_nDataPos( -1 )
 {
 }
 
@@ -20,14 +20,33 @@ bool LinkConfig::GetConfig( std::string& sIP, unsigned int& nPort )
 		return false;
 	}
 
-	if( m_nDataPos >= m_vctSvrIP.size() )
+	m_nDataPos++;
+
+	if( m_nDataPos >= m_vctSvrIP.size() || m_nDataPos < 0 )
 	{
 		m_nDataPos = 0;
 	}
 
 	sIP = m_vctSvrIP[m_nDataPos];
 	nPort = m_vctSvrPort[m_nDataPos];
-	m_nDataPos++;
+
+	return true;
+}
+
+bool LinkConfig::GetLoginInfo( std::string& sUserName, std::string& sPassword )
+{
+	if( m_vctSvrIP.size() <= 0 || m_vctSvrPort.size() <= 0 || m_vctSvrPort.size() != m_vctSvrIP.size() )
+	{
+		return false;
+	}
+
+	if( m_nDataPos >= m_vctSvrIP.size() || m_nDataPos < 0 )
+	{
+		return false;
+	}
+
+	sUserName = m_vctUserName[m_nDataPos];
+	sPassword = m_vctPassword[m_nDataPos];
 
 	return true;
 }
@@ -64,6 +83,18 @@ int ParseSvrConfig( inifile::IniFile& refIniFile, std::string sNodeName, LinkCon
 			return -200 - n;
 		}
 		oConfig.m_vctSvrPort.push_back( nPort );
+
+		std::string		sUserName = refIniFile.getStringValue( sNodeName, std::string("UserName_")+pszTmp, nErrCode );
+		if( 0 != nErrCode )	{
+			sUserName = "default";
+		}
+		oConfig.m_vctUserName.push_back( sUserName );
+
+		std::string		sPassword = refIniFile.getStringValue( sNodeName, std::string("Password_")+pszTmp, nErrCode );
+		if( 0 != nErrCode )	{
+			sPassword = "default";
+		}
+		oConfig.m_vctPassword.push_back( sPassword );
 	}
 
 	return 0;

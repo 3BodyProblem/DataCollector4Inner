@@ -185,34 +185,66 @@ unsigned int MkQuotation::GetMarketID() const
 
 int MkQuotation::PrepareDumpFile()
 {
-	if( GetWorkStatus() == ET_SS_LOGIN )			///< 登录成功后，执行订阅操作
+	if( false == Configuration::GetConfig().IsDumpModel() )
 	{
-		if( false == Configuration::GetConfig().IsDumpModel() )
-		{
-			return 0;
-		}
-
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : Creating Quotation\'s dump file ......" );
-
-		char			pszTmpFile[128*2] = { 0 };	///< 准备行情数据落盘
-		::sprintf( pszTmpFile, "Quotation_%u_%u.dmp", DateTime::Now().DateToLong(), DateTime::Now().TimeToLong() );
-		std::string		sFilePath = JoinPath( Configuration::GetConfig().GetDumpFolder(), pszTmpFile );
-
-		m_oQuotDumper.Close();
-		if( false == m_oQuotDumper.Open( false, sFilePath.c_str(), DateTime::Now().DateToLong() ) )
-		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::PrepareDumpFile() : failed 2 create quotation dump file" );
-			return -1;
-		}
-
-		m_oWorkStatus = ET_SS_INITIALIZING;			///< 更新MkQuotation会话的状态
-
-		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : dump file created, result = %s", sFilePath.c_str() );
-
 		return 0;
 	}
 
-	return -2;
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : Creating Quotation\'s dump file ......" );
+
+	char			pszTmpFile[128*2] = { 0 };	///< 准备行情数据落盘
+	::sprintf( pszTmpFile, "Quotation_%u_%u.dmp", DateTime::Now().DateToLong(), DateTime::Now().TimeToLong() );
+	std::string		sFilePath = JoinPath( Configuration::GetConfig().GetDumpFolder(), pszTmpFile );
+
+	m_oQuotDumper.Close();
+	if( false == m_oQuotDumper.Open( false, sFilePath.c_str(), DateTime::Now().DateToLong() ) )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::PrepareDumpFile() : failed 2 create quotation dump file" );
+		return -1;
+	}
+
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::PrepareDumpFile() : dump file created, result = %s", sFilePath.c_str() );
+
+	return 0;
+}
+
+bool MkQuotation::SendLoginPkg()
+{
+	int							nErrCode = 0;
+	std::string					sUserName, sPassword;
+	char						pszSendData[1024] = { 0 };
+	tagPackageHead*				pPkgHead = (tagPackageHead*)pszSendData;
+	tagBlockHead*				pMsgHead = (tagBlockHead*)( pszSendData + sizeof(tagPackageHead) );
+	tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( pszSendData + sizeof(tagPackageHead) + sizeof(tagBlockHead) );
+
+	pMsgHead->nDataType = 299;
+	pMsgHead->nDataLen = sizeof(tagCommonLoginData_LF299);
+
+	if( false == Configuration::GetConfig().GetHQConfList().GetLoginInfo( sUserName, sPassword ) )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::SendLoginPkg() : invalid data source login data." );
+		return false;
+	}
+
+	::strcpy( pMsgBody->pszActionKey, "login" );
+	::strcpy( pMsgBody->pszUserName, sUserName.c_str() );
+	::strcpy( pMsgBody->pszPassword, sPassword.c_str() );
+	pMsgBody->nReqDBSerialNo = 0;
+
+	pPkgHead->nSeqNo = 0;
+	pPkgHead->nMsgCount = 1;
+	pPkgHead->nMarketID = 0;
+	pPkgHead->nBodyLen = sizeof(tagCommonLoginData_LF299) + sizeof(tagBlockHead);
+
+	if( (nErrCode=m_pCommIOApi->SendData( 100, 100, pszSendData, pPkgHead->nBodyLen + sizeof(tagPackageHead), true )) < 0 )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::SendLoginPkg() : failed 2 send login package." );
+		return false;
+	}
+
+	m_oWorkStatus = ET_SS_INITIALIZING;			///< 更新MkQuotation会话的状态
+
+	return true;
 }
 
 void MkQuotation::OnConnectSuc()
@@ -221,7 +253,11 @@ void MkQuotation::OnConnectSuc()
 
 	m_oWorkStatus = ET_SS_CONNECTED;			///< 更新MkQuotation会话的状态
 
-	m_oWorkStatus = ET_SS_LOGIN;				///< 更新MkQuotation会话的状态
+	if( false == SendLoginPkg() ) {
+		return;
+	}
+
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnConnectSuc() : login message is sended." );
 	PrepareDumpFile();							///< 预备落盘文件的句柄
 }
 
@@ -286,10 +322,23 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 
 	for( unsigned int nOffset = 0; nOffset < nBodyLen; )
 	{
-		const tagBlockHead*		pMsg = (tagBlockHead*)(pBody+nOffset);
-		char*					pMsgBody = (char*)(pBody+nOffset+sizeof(tagBlockHead));
+		const tagBlockHead*			pMsg = (tagBlockHead*)(pBody+nOffset);
+		char*						pMsgBody = (char*)(pBody+nOffset+sizeof(tagBlockHead));
+		tagCommonLoginData_LF299*	pLoginResp = (tagCommonLoginData_LF299*)pMsgBody;
 
-		if( 0 != pMsg->nDataType )		///< MsgID == 0 是心跳包
+		if( 299 == pMsg->nDataType )	///< MsgID == 299 是登录返回包
+		{
+			if( 0 == ::strncmp( pLoginResp->pszActionKey, "success", ::strlen( "success" ) ) )
+			{
+				m_oWorkStatus = ET_SS_LOGIN;				///< 登录成功，更新MkQuotation会话的状态
+				QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnQuotation() : logged 2 server successfully." );
+			}
+			else
+			{
+				QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::OnQuotation() : failed 2 login!" );
+			}
+		}
+		else if( 0 != pMsg->nDataType )		///< MsgID == 0 是心跳包
 		{
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{

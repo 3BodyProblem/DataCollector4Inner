@@ -28,12 +28,19 @@ public:
 	 */
 	bool							GetConfig( std::string& sIP, unsigned int& nPort );
 
+	/**
+	 * @brief						获取登录信息
+	 */
+	bool							GetLoginInfo( std::string& sUserName, std::string& sPassword );
+
 public:
 	std::vector<std::string>		m_vctSvrIP;				///< 服务器地址
 	std::vector<unsigned int>		m_vctSvrPort;			///< 服务器端口
+	std::vector<std::string>		m_vctUserName;			///< 用户名
+	std::vector<std::string>		m_vctPassword;			///< 密码
 
 protected:
-	unsigned int					m_nDataPos;				///< 数据位置
+	int								m_nDataPos;				///< 数据位置
 };
 
 
