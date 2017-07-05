@@ -214,11 +214,7 @@ bool MkQuotation::SendLoginPkg()
 	std::string					sUserName, sPassword;
 	char						pszSendData[1024] = { 0 };
 	tagPackageHead*				pPkgHead = (tagPackageHead*)pszSendData;
-	tagBlockHead*				pMsgHead = (tagBlockHead*)( pszSendData + sizeof(tagPackageHead) );
-	tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( pszSendData + sizeof(tagPackageHead) + sizeof(tagBlockHead) );
-
-	pMsgHead->nDataType = 299;
-	pMsgHead->nDataLen = sizeof(tagCommonLoginData_LF299);
+	tagCommonLoginData_LF299*	pMsgBody = (tagCommonLoginData_LF299*)( pszSendData + sizeof(tagPackageHead) );
 
 	if( false == Configuration::GetConfig().GetHQConfList().GetLoginInfo( sUserName, sPassword ) )
 	{
@@ -234,9 +230,9 @@ bool MkQuotation::SendLoginPkg()
 	pPkgHead->nSeqNo = 0;
 	pPkgHead->nMsgCount = 1;
 	pPkgHead->nMarketID = 0;
-	pPkgHead->nBodyLen = sizeof(tagCommonLoginData_LF299) + sizeof(tagBlockHead);
+	pPkgHead->nMsgLength = sizeof(tagCommonLoginData_LF299);
 
-	if( (nErrCode=m_pCommIOApi->SendData( 100, 100, pszSendData, pPkgHead->nBodyLen + sizeof(tagPackageHead), true )) < 0 )
+	if( (nErrCode=m_pCommIOApi->SendData( 299, 100, pszSendData, sizeof(tagCommonLoginData_LF299) + sizeof(tagPackageHead), true )) < 0 )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::SendLoginPkg() : failed 2 send login package." );
 		return false;
@@ -311,7 +307,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 {
 	const char*					pBody = lpData + sizeof(tagPackageHead);
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
-	unsigned int				nBodyLen = pFrameHead->nBodyLen;
+	unsigned int				nBodyLen = (pFrameHead->nMsgLength * pFrameHead->nMsgCount) + sizeof(tagPackageHead);
 	unsigned int				nMsgCount = pFrameHead->nMsgCount;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
@@ -320,13 +316,12 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		m_nMarketID = pFrameHead->nMarketID;
 	}
 
-	for( unsigned int nOffset = 0; nOffset < nBodyLen; )
+	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBodyLen; )
 	{
-		const tagBlockHead*			pMsg = (tagBlockHead*)(pBody+nOffset);
-		char*						pMsgBody = (char*)(pBody+nOffset+sizeof(tagBlockHead));
+		char*						pMsgBody = (char*)(pBody+nOffset);
 		tagCommonLoginData_LF299*	pLoginResp = (tagCommonLoginData_LF299*)pMsgBody;
 
-		if( 299 == pMsg->nDataType )	///< MsgID == 299 是登录返回包
+		if( 299 == usMessageNo )			///< MsgID == 299 是登录返回包
 		{
 			if( 0 == ::strncmp( pLoginResp->pszActionKey, "success", ::strlen( "success" ) ) )
 			{
@@ -338,17 +333,17 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 				QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::OnQuotation() : failed 2 login!" );
 			}
 		}
-		else if( 0 != pMsg->nDataType )		///< MsgID == 0 是心跳包
+		else if( 0 != usMessageNo )			///< MsgID == 0 是心跳包
 		{
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{
-				QuoCollector::GetCollector()->OnData( pMsg->nDataType, pMsgBody, pMsg->nDataLen, false );
+				QuoCollector::GetCollector()->OnData( usMessageNo, pMsgBody, pFrameHead->nMsgLength, false );
 			}
 			else
 			{
-				bool	bLastImageFlag = ( (nOffset+((tagBlockHead*)(pBody+nOffset))->nDataLen+sizeof(tagBlockHead) >=nBodyLen) && (100==usFunctionID) ) ? true : false;
+				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=nBodyLen) && (100==usFunctionID) ) ? true : false;
 
-				QuoCollector::GetCollector()->OnImage( pMsg->nDataType, pMsgBody, pMsg->nDataLen, bLastImageFlag );
+				QuoCollector::GetCollector()->OnImage( usMessageNo, pMsgBody, pFrameHead->nMsgLength, bLastImageFlag );
 
 				if( true == bLastImageFlag )
 				{
@@ -357,7 +352,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			}
 		}
 
-		nOffset += (pMsg->nDataLen+sizeof(tagBlockHead));
+		nOffset += pFrameHead->nMsgLength;
 	}
 
 	return true;

@@ -23,22 +23,10 @@
 typedef struct
 {
 	unsigned __int64				nSeqNo;				///< 自增序号
-	unsigned int					nMarketID;			///< 市场编号
-	unsigned int					nBodyLen;			///< 数据部分长度
-	unsigned int					nMsgCount;			///< 包内的Message数量
+	unsigned char					nMarketID;			///< 市场编号
+	unsigned short					nMsgLength;			///< 数据部分长度
+	unsigned short					nMsgCount;			///< Message数量
 } tagPackageHead;
-
-
-/**
- * @class							tagBlockHead
- * @brief							数据块的头部的定义
- * @author							barry
- */
-typedef struct
-{
-	unsigned int					nDataType;			///< 数据块类型
-	unsigned int					nDataLen;			///< 数据块长度
-} tagBlockHead;
 
 
 /**
