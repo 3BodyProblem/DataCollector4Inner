@@ -289,12 +289,6 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 		return false;
 	}
 
-	if( 100 != usMessageNo )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnRecvData() : an unknow message no (%u)", usMessageNo );
-		return false;
-	}
-
 	if( true == Configuration::GetConfig().IsDumpModel() )
 	{
 		m_oQuotDumper.Write( lpData, uiSize );
@@ -305,9 +299,8 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
-	const char*					pBody = lpData + sizeof(tagPackageHead);
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
-	unsigned int				nBodyLen = (pFrameHead->nMsgLength * pFrameHead->nMsgCount) + sizeof(tagPackageHead);
+	unsigned int				nPkgLen = (pFrameHead->nMsgLength * pFrameHead->nMsgCount) + sizeof(tagPackageHead);
 	unsigned int				nMsgCount = pFrameHead->nMsgCount;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
@@ -316,13 +309,14 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		m_nMarketID = pFrameHead->nMarketID;
 	}
 
-	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nBodyLen; )
+	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nPkgLen; )
 	{
-		char*						pMsgBody = (char*)(pBody+nOffset);
-		tagCommonLoginData_LF299*	pLoginResp = (tagCommonLoginData_LF299*)pMsgBody;
+		char*						pMsgBody = (char*)(lpData+nOffset);
 
-		if( 299 == usMessageNo )			///< MsgID == 299 是登录返回包
+		if( 299 == usMessageNo && 100 == usFunctionID )			///< MsgID == 299 是登录返回包
 		{
+			tagCommonLoginData_LF299*	pLoginResp = (tagCommonLoginData_LF299*)pMsgBody;
+
 			if( 0 == ::strncmp( pLoginResp->pszActionKey, "success", ::strlen( "success" ) ) )
 			{
 				m_oWorkStatus = ET_SS_LOGIN;				///< 登录成功，更新MkQuotation会话的状态
@@ -333,7 +327,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 				QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::OnQuotation() : failed 2 login!" );
 			}
 		}
-		else if( 0 != usMessageNo )			///< MsgID == 0 是心跳包
+		else if( 0 != usMessageNo )							///< MsgID == 0 是心跳包
 		{
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{
@@ -341,7 +335,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			}
 			else
 			{
-				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=nBodyLen) && (100==usFunctionID) ) ? true : false;
+				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=nPkgLen) && (100==usFunctionID) ) ? true : false;
 
 				QuoCollector::GetCollector()->OnImage( usMessageNo, pMsgBody, pFrameHead->nMsgLength, bLastImageFlag );
 

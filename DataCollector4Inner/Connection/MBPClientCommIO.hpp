@@ -16,11 +16,11 @@ typedef void tagFun_OnError(const char * szErrString);
 //-----------------------------------------------------------------------------------------------------------------------------
 typedef struct
 {
-	unsigned int						uiMaxLinkCount;			//支持的最大连接数量
-	unsigned int						uiSendBufCount;			//发送资源数量
-	unsigned int						uiThreadCount;			//线程数量
-	unsigned int						uiPageSize;				//内存池页面大小
-	unsigned int						uiPageCount;			//内存池页面数量
+	unsigned int						uiMaxLinkCount;			//支持的最大连接数量【仅异步方式使用】
+	unsigned int						uiSendBufCount;			//发送资源数量【仅异步方式使用】
+	unsigned int						uiThreadCount;			//线程数量【仅异步方式使用】
+	unsigned int						uiPageSize;				//内存池页面大小【仅异步方式使用】
+	unsigned int						uiPageCount;			//内存池页面数量【仅异步方式使用】
 	bool								bSSL;					//是否启用SSL加密
 	char								szCrtFileName[256];		//OpenSSL .crt证书文件路径，仅SSL使用
 	char								szPfxFileName[256];		//OpenSSL .pfx证书文件路径，仅SSL使用
