@@ -320,7 +320,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			if( 0 == ::strncmp( pLoginResp->pszActionKey, "success", ::strlen( "success" ) ) )
 			{
 				m_oWorkStatus = ET_SS_LOGIN;				///< 登录成功，更新MkQuotation会话的状态
-				QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnQuotation() : logged 2 server successfully." );
+				QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnQuotation() : log 2 server successfully." );
 			}
 			else
 			{
