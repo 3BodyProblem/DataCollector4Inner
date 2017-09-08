@@ -164,6 +164,10 @@ extern "C"
 		::printf( "----------------------  [End]  -------------------------\n\n\n" );
 	}
 
+	__declspec(dllexport) void __stdcall Echo()
+	{
+	}
+
 }
 
 
