@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------------------------------------------------------
 #include "MBPClientCommIO.h"
 #include <stdio.h>
+#include "../Configuration.h"
 //-----------------------------------------------------------------------------------------------------------------------------
 MBPClientCommIO::MBPClientCommIO(void)
 {
@@ -27,7 +28,7 @@ int  MBPClientCommIO::Instance(const tagMBPClientIO_RunParam * lpParam)
 
 	Release();
 
-	::GetModuleFileNameA(NULL,tempbuf,sizeof(tempbuf));
+	::GetModuleFileNameA(g_oModule,tempbuf,sizeof(tempbuf));
 	for ( i=strlen(tempbuf)-1;i>=0;i-- )
 	{
 		if ( tempbuf[i] == '\\' || tempbuf[i] == '/' )

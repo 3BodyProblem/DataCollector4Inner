@@ -27,7 +27,9 @@ typedef struct
 	char								szPfxFilePasswrod[32];	//OpenSSL .pfx证书密码，仅SSL使用
 	bool								bDetailLog;				//是否打印详细日志
 	tagFun_OnError					*	lpOnError;				//错误响应指针
-	char								szReserved[4096];		//保留
+	unsigned char						ucSSLType;				//SSL协议版本（0:不使用SSL 1:SSL3.0/2.0兼容协议 2:TLS1.0 3:TLS1.1 其他:TLS1.2）
+	char								szCiperList[2048];		//SSL使用的密码套件（如"ECDHE-RSA-AES128-GCM-SHA256"、"AES256-SHA"）
+	char								szReserved[2047];		//保留
 } tagMBPClientIO_RunParam;
 //.............................................................................................................................
 typedef struct
