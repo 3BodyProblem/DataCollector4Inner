@@ -47,6 +47,7 @@ int QuoCollector::Initialize( I_DataHandle* pIDataHandle )
 
 void QuoCollector::Release()
 {
+	m_oQuotationData.Destroy();
 }
 
 I_DataHandle* QuoCollector::operator->()
