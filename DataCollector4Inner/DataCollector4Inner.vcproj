@@ -62,7 +62,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtestd.lib"
-				OutputFile="D:\QYClient\QuoteModule\CTPDL\DataCollector4InnerCTPDL.dll"
+				OutputFile="D:\ServiceManager\srvunit\DataNode4Tran2ndSHL1_Port31273\DataCollector4Inner.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Debug/"
 				ModuleDefinitionFile="DataCollector4Inner.def"
