@@ -7,6 +7,9 @@
 #include "DataCollector4Inner.h"
 
 
+const std::string		g_sVersion = "1.0.1";
+
+
 QuoCollector::QuoCollector()
  : m_pCbDataHandle( NULL )
 {
@@ -26,9 +29,11 @@ int QuoCollector::Initialize( I_DataHandle* pIDataHandle )
 	m_pCbDataHandle = pIDataHandle;
 	if( NULL == m_pCbDataHandle )
 	{
-		::printf( "QuoCollector::Initialize() : invalid arguments (NULL)\n" );
+		::printf( "QuoCollector::Initialize() : invalid arguments (NULL), version = %s\n", g_sVersion.c_str() );
 		return -1;
 	}
+
+	QuoCollector::GetCollector()->OnLog( TLV_ERROR, "QuoCollector::Initialize() : [Version] %s", g_sVersion.c_str() );
 
 	if( 0 != (nErrorCode = Configuration::GetConfig().Initialize()) )
 	{
@@ -113,8 +118,8 @@ enum E_SS_Status QuoCollector::GetCollectorStatus( char* pszStatusDesc, unsigned
 		m_oQuotationData.GetCommIO().GetStatus( &tagStatus );
 	}
 
-	nStrLen = ::sprintf( pszStatusDesc, "模块名=自适应行情代理,市场编号=%u,快照目录=%s,连接状态=%s,发送缓冲占比=%u(％),内存池占比=%u(％),接收频率=%u(次/秒),发送频率=%u(次/秒),接收带宽=%u(bps),接收总量=%I64d(字节)"
-		, m_oQuotationData.GetMarketID(), refCnf.GetDumpFolder().c_str(), sStatusDesc.c_str()
+	nStrLen = ::sprintf( pszStatusDesc, "模块名=自适应行情代理,Version=%s,市场编号=%u,快照目录=%s,连接状态=%s,发送缓冲占比=%u(％),内存池占比=%u(％),接收频率=%u(次/秒),发送频率=%u(次/秒),接收带宽=%u(bps),接收总量=%I64d(字节)"
+		, g_sVersion.c_str(), m_oQuotationData.GetMarketID(), refCnf.GetDumpFolder().c_str(), sStatusDesc.c_str()
 		, tagStatus.uiSendBufPercent, tagStatus.uiMemoryPoolPercent, tagStatus.uiRecvFreq, tagStatus.uiSendFreq, tagStatus.uiRecvBandWidth, tagStatus.ui64RecvAmount );
 
 	return (enum E_SS_Status)(m_oQuotationData.GetWorkStatus());

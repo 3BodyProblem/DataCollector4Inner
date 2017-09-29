@@ -139,7 +139,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="gtest.lib"
-				OutputFile="D:\ServiceManager\srvunit\DataNode\$(ProjectName).dll"
+				OutputFile="D:\ServiceManager\srvunit\DataNode4Tran2ndSHL1_Port31273\DataCollector4Inner.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="../libs/gtest/library_vc9/Release/"
 				ModuleDefinitionFile="DataCollector4Inner.def"
