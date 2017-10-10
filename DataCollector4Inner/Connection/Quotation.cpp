@@ -309,7 +309,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		m_nMarketID = pFrameHead->nMarketID;
 	}
 
-	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nPkgLen; )
+	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nPkgLen && nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
 	{
 		char*						pMsgBody = (char*)(lpData+nOffset);
 
@@ -345,8 +345,6 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 				}
 			}
 		}
-
-		nOffset += pFrameHead->nMsgLength;
 	}
 
 	return true;
