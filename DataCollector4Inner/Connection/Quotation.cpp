@@ -311,7 +311,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 
 	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nPkgLen && nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
 	{
-		char*						pMsgBody = (char*)(lpData+nOffset);
+		char*					pMsgBody = (char*)(lpData+nOffset);
 
 		if( 299 == usMessageNo && 100 == usFunctionID )			///< MsgID == 299 ÊÇµÇÂ¼·µ»Ø°ü
 		{
