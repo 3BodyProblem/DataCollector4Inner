@@ -25,7 +25,6 @@ typedef struct
 	unsigned __int64				nSeqNo;				///< 自增序号
 	unsigned char					nMarketID;			///< 市场编号
 	unsigned short					nMsgLength;			///< 数据部分长度
-	unsigned short					nMsgCount;			///< Message数量
 } tagPackageHead;
 
 

@@ -228,7 +228,6 @@ bool MkQuotation::SendLoginPkg()
 	pMsgBody->nReqDBSerialNo = 0;
 
 	pPkgHead->nSeqNo = 0;
-	pPkgHead->nMsgCount = 1;
 	pPkgHead->nMarketID = 0;
 	pPkgHead->nMsgLength = sizeof(tagCommonLoginData_LF299);
 
@@ -300,8 +299,6 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
-	unsigned int				nPkgLen = (pFrameHead->nMsgLength * pFrameHead->nMsgCount) + sizeof(tagPackageHead);
-	unsigned int				nMsgCount = pFrameHead->nMsgCount;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
 	if( 0 == m_nMarketID )
@@ -309,7 +306,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		m_nMarketID = pFrameHead->nMarketID;
 	}
 
-	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < nPkgLen && nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
+	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
 	{
 		char*					pMsgBody = (char*)(lpData+nOffset);
 
@@ -335,7 +332,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			}
 			else
 			{
-				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=nPkgLen) && (100==usFunctionID) ) ? true : false;
+				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=uiSize) && (100==usFunctionID) ) ? true : false;
 
 				QuoCollector::GetCollector()->OnImage( usMessageNo, pMsgBody, pFrameHead->nMsgLength, bLastImageFlag );
 
