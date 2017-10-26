@@ -86,7 +86,7 @@ int QuoCollector::RecoverQuotation()
 		return -1;
 	}
 
-	for( nSec = 0; nSec < 60 && ET_SS_WORKING != m_oQuotationData.GetWorkStatus(); nSec++ )
+	for( nSec = 0; nSec < 12 && ET_SS_WORKING != m_oQuotationData.GetWorkStatus(); nSec++ )
 	{
 		SimpleTask::Sleep( 1000 * 1 );
 	}
