@@ -141,6 +141,12 @@ int MkQuotation::Activate()
 
 int MkQuotation::Connect2Server()
 {
+	if( true == Configuration::GetConfig().IsBroadcastModel() )
+	{
+
+		return 0;
+	}
+
 	if( m_oWorkStatus == ET_SS_DISCONNECTED )
 	{
 		int									nErrorCode = 0;
@@ -196,8 +202,8 @@ int MkQuotation::PrepareDumpFile()
 	::sprintf( pszTmpFile, "Quotation_%u_%u.dmp", DateTime::Now().DateToLong(), DateTime::Now().TimeToLong() );
 	std::string		sFilePath = JoinPath( Configuration::GetConfig().GetDumpFolder(), pszTmpFile );
 
-	m_oQuotDumper.Close();
-	if( false == m_oQuotDumper.Open( false, sFilePath.c_str(), DateTime::Now().DateToLong() ) )
+	m_oQuotDumper.CloseFile();
+	if( false == m_oQuotDumper.OpenFile( sFilePath.c_str() ) )
 	{
 		QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::PrepareDumpFile() : failed 2 create quotation dump file" );
 		return -1;
@@ -290,7 +296,7 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 	if( true == Configuration::GetConfig().IsDumpModel() )
 	{
-		m_oQuotDumper.Write( lpData, uiSize );
+		m_oQuotDumper.Record( usMessageNo, usFunctionID, lpData, uiSize );
 	}
 
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
@@ -304,6 +310,11 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 	if( 0 == m_nMarketID )
 	{
 		m_nMarketID = pFrameHead->nMarketID;
+	}
+
+	if( m_oWorkStatus == ET_SS_WORKING )
+	{
+		QuoCollector::GetCollector()->OnStream( usMessageNo, lpData, uiSize );
 	}
 
 	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
@@ -328,7 +339,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		{
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{
-				QuoCollector::GetCollector()->OnData( usMessageNo, pMsgBody, pFrameHead->nMsgLength, false );
+				QuoCollector::GetCollector()->OnData( usMessageNo, pMsgBody, pFrameHead->nMsgLength, false, false );
 			}
 			else
 			{

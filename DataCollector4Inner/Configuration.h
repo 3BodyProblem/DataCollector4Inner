@@ -94,11 +94,31 @@ public:
 	 */
 	bool							IsDumpModel() const;
 
+	/**
+	 * @brief						是否为播放模式
+	 * @return						true				行情自动播放模式
+	 */
+	bool							IsBroadcastModel() const;
+
+	/**
+	 * @brief						获取行情文件的路径
+	 */
+	std::string						GetQuotationFilePath() const;
+
+	/**
+	 * @brief						获取正常速度播放的开始时间
+	 */
+	unsigned int					GetBroadcastBeginTime() const;
+
 private:
 	tagMBPClientIO_RunParam			m_tagClientRunParam;	///< API运行参数
 	bool							m_bDumpFile;			///< 是否落盘
 	std::string						m_sDumpFileFolder;		///< 行情落盘路径
 	LinkConfig						m_oHQConfigList;		///< 行情服务器连接配置列表
+private:
+	bool							m_bBroadcastModel;		///< 数据自动播放模式
+	std::string						m_sBcQuotationFile;		///< 播放的实时文件路径
+	unsigned int					m_nBcBeginTime;			///< 正常速度的播放时间
 };
 
 

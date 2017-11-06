@@ -201,7 +201,7 @@ private:
 private:
 	unsigned int			m_nMarketID;			///< 市场编号
 	WorkStatus				m_oWorkStatus;			///< 工作状态
-	MemoDumper<char>		m_oQuotDumper;			///< 行情落盘对象
+	QuotationRecorder		m_oQuotDumper;			///< 行情落盘对象
 };
 
 

@@ -102,6 +102,7 @@ int ParseSvrConfig( inifile::IniFile& refIniFile, std::string sNodeName, LinkCon
 
 
 Configuration::Configuration()
+ : m_bBroadcastModel( false ), m_nBcBeginTime( 0 )
 {
 	Release();
 }
@@ -116,6 +117,9 @@ Configuration& Configuration::GetConfig()
 void Configuration::Release()
 {
 	m_sDumpFileFolder = "";
+	m_nBcBeginTime = 0;
+	m_sBcQuotationFile = "";
+	m_bBroadcastModel = false;
 	::memset( &m_tagClientRunParam, 0, sizeof(m_tagClientRunParam) );
 }
 
@@ -165,7 +169,7 @@ int Configuration::Initialize()
 	///< 设置： 行情落盘目录
 	int nIsDump = oIniFile.getIntValue( std::string("SRV"), std::string("dump"), nErrCode );
 	if( 0 != nErrCode ) {
-		m_bDumpFile = true;
+		m_bDumpFile = false;
 	} else {
 		m_bDumpFile = (1==nIsDump) ? true : false;
 	}
@@ -178,7 +182,45 @@ int Configuration::Initialize()
 		return -2;
 	}
 
+	std::string	sBroadCastModel = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastModel"), nErrCode );
+	if( 0 == nErrCode )	{
+		if( sBroadCastModel == "1" )
+		{
+			m_bBroadcastModel = true;
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : ... Enter [Broadcase Model] ... !!! " );
+		}
+	}
+
+	if( true == m_bBroadcastModel )
+	{
+		m_sBcQuotationFile = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastQuotationFile"), nErrCode );
+		if( 0 != nErrCode )	{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : invalid broadcast (quotation) file." );
+		}
+
+		m_nBcBeginTime = oIniFile.getIntValue( std::string("SRV"), std::string("BroadcastBeginTime"), nErrCode );
+		if( 0 != nErrCode )	{
+			m_nBcBeginTime = 0xffffffff;
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : Topspeed Mode...!" );
+		}
+	}
+
 	return 0;
+}
+
+bool Configuration::IsBroadcastModel() const
+{
+	return m_bBroadcastModel;
+}
+
+unsigned int Configuration::GetBroadcastBeginTime() const
+{
+	return m_nBcBeginTime;
+}
+
+std::string Configuration::GetQuotationFilePath() const
+{
+	return m_sBcQuotationFile;
 }
 
 const std::string& Configuration::GetDumpFolder() const
