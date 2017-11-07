@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "Quotation.h"
 #include "../DataCollector4Inner.h"
+#include "time.h"
 
 
 WorkStatus::WorkStatus()
