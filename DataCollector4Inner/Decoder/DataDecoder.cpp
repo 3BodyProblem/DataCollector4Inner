@@ -1,7 +1,5 @@
 #include "DataDecoder.h"
-#include "../DataServer/SvrConfig.h"
-#include "../DataServer/NodeServer.h"
-#include "../DataServer/Communication/DataStream.h"
+#include "../DataCollector4Inner.h"
 
 
 DataDecoder::DataDecoder()
@@ -12,7 +10,7 @@ DataDecoder::DataDecoder()
 int DataDecoder::Initialize( std::string sPluginPath, std::string sCnfXml, unsigned int nXCodeBuffSize )
 {
 	Release();
-	DataNodeService::GetSerivceObj().WriteInfo( "DataDecoder::Initialize() : initializing data decoder plugin ......" );
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Initialize() : initializing data decoder plugin ......" );
 
 	T_Func_FetchModuleVersion	pFunGetVersion = NULL;
 	T_Func_GetDecodeApi			pFuncDecodeApi = NULL;
@@ -20,14 +18,14 @@ int DataDecoder::Initialize( std::string sPluginPath, std::string sCnfXml, unsig
 
 	if( 0 != nErrorCode )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : failed 2 load data decoder plugin [%s], errorcode=%d", sPluginPath.c_str(), nErrorCode );
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : failed 2 load data decoder plugin [%s], errorcode=%d", sPluginPath.c_str(), nErrorCode );
 		return nErrorCode;
 	}
 
 	m_pXCodeBuffer = new char[nXCodeBuffSize];
 	if( NULL == m_pXCodeBuffer )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : failed 2 allocate decoder buffer" );
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : failed 2 allocate decoder buffer" );
 		return -1;
 	}
 
@@ -37,25 +35,25 @@ int DataDecoder::Initialize( std::string sPluginPath, std::string sCnfXml, unsig
 
 	if( NULL == pFunGetVersion || NULL == m_pDecoderApi )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : invalid fuction pointer(NULL)" );
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : invalid fuction pointer(NULL)" );
 		return -100;
 	}
 
 	m_pDecoderApi = pFuncDecodeApi();
-	DataNodeService::GetSerivceObj().WriteInfo( "DataDecoder::Initialize() : DataDecoder Version => [%s] ......", pFunGetVersion() );
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Initialize() : DataDecoder Version => [%s] ......", pFunGetVersion() );
 	if( NULL == m_pDecoderApi )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : invalid decoder obj. pointer(NULL)" );
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : invalid decoder obj. pointer(NULL)" );
 		return -200;
 	}
 
 	if( 0 != (nErrorCode = m_pDecoderApi->Initialize( sCnfXml.c_str() )) )
 	{
-		DataNodeService::GetSerivceObj().WriteError( "DataDecoder::Initialize() : failed 2 initialize data decoder, configuration file: %s", sCnfXml.c_str() );
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : failed 2 initialize data decoder, configuration file: %s", sCnfXml.c_str() );
 		return nErrorCode;
 	}
 
-	DataNodeService::GetSerivceObj().WriteInfo( "DataDecoder::Initialize() : data decoder plugin is initialized ......" );
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Initialize() : data decoder plugin is initialized ......" );
 
 	return 0;
 }
@@ -64,11 +62,11 @@ void DataDecoder::Release()
 {
 	if( NULL != m_pDecoderApi )
 	{
-		DataNodeService::GetSerivceObj().WriteInfo( "DataDecoder::Release() : releasing data decoder plugin ......" );
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Release() : releasing data decoder plugin ......" );
 		m_pDecoderApi->Release();
 		delete m_pDecoderApi;
 		m_pDecoderApi = NULL;
-		DataNodeService::GetSerivceObj().WriteInfo( "DataDecoder::Release() : data decoder plugin is released ......" );
+		QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Release() : data decoder plugin is released ......" );
 	}
 
 	if( NULL != m_pXCodeBuffer )
@@ -90,8 +88,6 @@ int DataDecoder::Prepare4AUncompression( const char* pTagHead )
 	{
 		return -1;
 	}
-
-	::memcpy( m_pXCodeBuffer, pTagHead, sizeof(tagPackageHead) );
 
 	return m_pDecoderApi->Attach2Buffer( m_pXCodeBuffer + sizeof(tagPackageHead), m_nDataLen - sizeof(tagPackageHead) );
 }

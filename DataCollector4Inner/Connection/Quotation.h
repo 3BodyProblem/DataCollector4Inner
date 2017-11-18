@@ -8,7 +8,8 @@
 #include <stdexcept>
 #include "DataDump.h"
 #include "../Configuration.h"
-#include "../Infrastructure/Lock.h"
+#include "../Decoder/DataDecoder.h"
+#include "../Infrastructure/Thread.h"
 #include "../Infrastructure/DateTime.h"
 
 
@@ -90,7 +91,7 @@ private:
  * @detail			封装了针对商品期货期权各市场的初始化、管理控制等方面的方法
  * @author			barry
  */
-class MkQuotation : public MBPClientCommIO_Spi
+class MkQuotation : public MBPClientCommIO_Spi, public SimpleTask
 {
 public:
 	MkQuotation();
@@ -122,6 +123,13 @@ public:///< 行情获取接口
 	 * @brief				断开连接
 	 */
 	void					CloseConnection();
+
+	/**
+	 * @brief				加载行情数据
+	 * @param[in]			sFilePath			文件路径
+	 * @return				>=0					成功
+	 */
+	int						LoadDataFile( std::string sFilePath );
 
 public:///< 功能函数
 	/**
@@ -193,6 +201,16 @@ protected:///< 收到的行情数据处理方法
 	 * @return				true					发送登录成功
 	 */
 	bool					SendLoginPkg();
+
+	/**
+	 * @brief				任务函数(内循环)
+	 * @return				==0					成功
+							!=0					失败
+	 */
+	int						Execute();
+
+private:
+	DataDecoder				m_oDecoder;				///< 行情解码插件
 
 private:
 	MBPClientCommIO_Api*	m_pCommIOApi;			///< 通讯管理器指针

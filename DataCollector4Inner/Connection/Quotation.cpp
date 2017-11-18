@@ -72,6 +72,7 @@ WorkStatus&	WorkStatus::operator= ( enum E_SS_Status eWorkStatus )
 
 
 MkQuotation::MkQuotation()
+ : m_nMarketID( 0 )
 {
 }
 
@@ -101,6 +102,7 @@ int MkQuotation::Destroy()
 		m_pCommIOApi = NULL;
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : m_oCommIO.Release()" );
 		m_oCommIO.Release();
+		m_oDecoder.Release();
 
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Destroy() : ............ Destroyed! .............." );
 	}
@@ -131,6 +133,12 @@ int MkQuotation::Activate()
 			return -2;
 		}
 
+		if( 0 != m_oDecoder.Initialize( Configuration::GetConfig().GetCompressPluginPath(), Configuration::GetConfig().GetCompressPluginCfg(), 1024*1024*30 ) )
+		{
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 initialize decoder plugin." );
+			return -3;
+		}
+
 		m_pCommIOApi->RegisterSpi( this );
 		m_oWorkStatus = ET_SS_DISCONNECTED;				///< 更新MkQuotation会话的状态::GetStatus()
 
@@ -144,8 +152,7 @@ int MkQuotation::Connect2Server()
 {
 	if( true == Configuration::GetConfig().IsBroadcastModel() )
 	{
-
-		return 0;
+		return SimpleTask::Activate();
 	}
 
 	if( m_oWorkStatus == ET_SS_DISCONNECTED )
@@ -168,6 +175,44 @@ int MkQuotation::Connect2Server()
 
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::Connect2Server() : connection --> %s : %u", sIP.c_str(), nPort );
 	}
+
+	return 0;
+}
+
+int MkQuotation::Execute()
+{
+	return LoadDataFile( Configuration::GetConfig().GetQuotationFilePath().c_str() );
+}
+
+int MkQuotation::LoadDataFile( std::string sFilePath )
+{
+	QuotationRecover		oDataRecover;
+
+	m_nMarketID = 0;
+	if( 0 != oDataRecover.OpenFile( sFilePath.c_str(), Configuration::GetConfig().GetBroadcastBeginTime() ) )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "CTPQuotation::LoadDataFile() : failed 2 open snap file : %s", sFilePath.c_str() );
+		return -1;
+	}
+
+	while( true )
+	{
+		int					nLength = 1024*1024*20;
+		unsigned short		nMessageNo = 0;
+		unsigned short		nFunctionID = 0;
+		static char*		pszData = new char[1024*1024*20];
+
+		nLength = oDataRecover.Read( nMessageNo, nFunctionID, pszData, nLength );
+
+		if( nLength <= 0 )
+		{
+			break;
+		}
+
+		OnQuotation( nMessageNo, nFunctionID, pszData, nLength );
+	}
+
+	QuoCollector::GetCollector()->OnLog( TLV_INFO, "CTPQuotation::LoadDataFile() : End of Quotation File..." );
 
 	return 0;
 }
@@ -299,6 +344,14 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 	{
 		m_oQuotDumper.Record( usMessageNo, usFunctionID, lpData, uiSize );
 	}
+
+	if( 0 != m_oDecoder.Prepare4AUncompression( lpData ) )
+	{
+		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnRecvData() : failed 2 prepare a uncompression." );
+		return false;
+	}
+
+	///< m_oDecoder
 
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
 }

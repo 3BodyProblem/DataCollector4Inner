@@ -2,10 +2,9 @@
 #define	__DATA_DECODER_H__
 
 
-#include <string>
-#include "../Infrastructure/Dll.h"
-#include "../Infrastructure/Lock.h"
 #include "../../../DataXCode/DataXCode/IXCode.h"
+#include "../Infrastructure/Lock.h"
+#include "../Infrastructure/Dll.h"
 
 
 /**

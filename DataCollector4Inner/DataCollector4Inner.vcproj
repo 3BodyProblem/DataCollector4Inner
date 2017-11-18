@@ -219,6 +219,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Infrastructure\Dll.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Infrastructure\Dll.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Infrastructure\Hash.cpp"
 				>
 			</File>
@@ -260,6 +268,18 @@
 			</File>
 			<File
 				RelativePath=".\UnitTest\UnitTest.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Decoder"
+			>
+			<File
+				RelativePath=".\Decoder\DataDecoder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Decoder\DataDecoder.h"
 				>
 			</File>
 		</Filter>

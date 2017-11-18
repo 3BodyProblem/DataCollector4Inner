@@ -110,15 +110,28 @@ public:
 	 */
 	unsigned int					GetBroadcastBeginTime() const;
 
+	/**
+	 * @brief						压缩模块插件路径
+	 */
+	const std::string&				GetCompressPluginPath() const;
+
+	/**
+	 * @brief						数据采集插件配置
+	 */
+	const std::string&				GetCompressPluginCfg() const;
+
 private:
-	tagMBPClientIO_RunParam			m_tagClientRunParam;	///< API运行参数
-	bool							m_bDumpFile;			///< 是否落盘
-	std::string						m_sDumpFileFolder;		///< 行情落盘路径
-	LinkConfig						m_oHQConfigList;		///< 行情服务器连接配置列表
+	std::string						m_sCompressPluginPath;		///< 数据压缩插件所在路径
+	std::string						m_sCompressPluginConfig;	///< 数据压缩插件配置文件
 private:
-	bool							m_bBroadcastModel;		///< 数据自动播放模式
-	std::string						m_sBcQuotationFile;		///< 播放的实时文件路径
-	unsigned int					m_nBcBeginTime;			///< 正常速度的播放时间
+	tagMBPClientIO_RunParam			m_tagClientRunParam;		///< API运行参数
+	bool							m_bDumpFile;				///< 是否落盘
+	std::string						m_sDumpFileFolder;			///< 行情落盘路径
+	LinkConfig						m_oHQConfigList;			///< 行情服务器连接配置列表
+private:
+	bool							m_bBroadcastModel;			///< 数据自动播放模式
+	std::string						m_sBcQuotationFile;			///< 播放的实时文件路径
+	unsigned int					m_nBcBeginTime;				///< 正常速度的播放时间
 };
 
 

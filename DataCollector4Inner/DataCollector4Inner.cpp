@@ -7,7 +7,7 @@
 #include "DataCollector4Inner.h"
 
 
-const std::string		g_sVersion = "1.2.3";
+const std::string		g_sVersion = "1.2.4";
 
 
 QuoCollector::QuoCollector()
@@ -172,6 +172,9 @@ extern "C"
 
 	__declspec(dllexport) void __stdcall Echo()
 	{
+		MkQuotation				objQuotation;
+
+		objQuotation.LoadDataFile( Configuration::GetConfig().GetQuotationFilePath().c_str() );		///< 解析实时文件
 	}
 
 }

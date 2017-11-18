@@ -182,6 +182,17 @@ int Configuration::Initialize()
 		return -2;
 	}
 
+	m_sCompressPluginPath = oIniFile.getStringValue( std::string("SRV"), std::string("compressor"), nErrCode );
+	if( 0 != nErrCode )	{
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : miss compress plugin." );
+		return -3;
+	}
+	m_sCompressPluginConfig = oIniFile.getStringValue( std::string("SRV"), std::string("compressorcfg"), nErrCode );
+	if( 0 != nErrCode )	{
+		m_sCompressPluginConfig = "./DataXCode.xml";
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : Default Data Compressor Configuration Path : %s\n", m_sCompressPluginConfig.c_str() );
+	}
+
 	std::string	sBroadCastModel = oIniFile.getStringValue( std::string("SRV"), std::string("BroadcastModel"), nErrCode );
 	if( 0 == nErrCode )	{
 		if( sBroadCastModel == "1" )
@@ -221,6 +232,16 @@ unsigned int Configuration::GetBroadcastBeginTime() const
 std::string Configuration::GetQuotationFilePath() const
 {
 	return m_sBcQuotationFile;
+}
+
+const std::string& Configuration::GetCompressPluginPath() const
+{
+	return m_sCompressPluginPath;
+}
+
+const std::string& Configuration::GetCompressPluginCfg() const
+{
+	return m_sCompressPluginConfig;
 }
 
 const std::string& Configuration::GetDumpFolder() const
