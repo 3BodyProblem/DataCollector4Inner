@@ -345,19 +345,12 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 		m_oQuotDumper.Record( usMessageNo, usFunctionID, lpData, uiSize );
 	}
 
-	if( 0 != m_oDecoder.Prepare4AUncompression( lpData ) )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnRecvData() : failed 2 prepare a uncompression." );
-		return false;
-	}
-
-	///< m_oDecoder
-
 	return OnQuotation( usMessageNo, usFunctionID, lpData, uiSize );
 }
 
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
+	bool						bPrepared = false;
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
@@ -391,15 +384,29 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		}
 		else if( 0 != usMessageNo )							///< MsgID == 0 ÊÇÐÄÌø°ü
 		{
+			char				pszData[1024] = { 0 };
+
+			if( false == bPrepared )
+			{
+				if( 0 != m_oDecoder.Prepare4AUncompression( (lpData+nOffset), (uiSize-nOffset) ) )
+				{
+					QuoCollector::GetCollector()->OnLog( TLV_ERROR, "MkQuotation::OnQuotation() : failed 2 prepare a uncompression." );
+					return false;
+				}
+				bPrepared = true;
+			}
+
+			m_oDecoder.UncompressData( usMessageNo, pszData, sizeof(pszData) );
+
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{
-				QuoCollector::GetCollector()->OnData( usMessageNo, pMsgBody, pFrameHead->nMsgLength, false, false );
+				QuoCollector::GetCollector()->OnData( usMessageNo, pszData, pFrameHead->nMsgLength, false, false );
 			}
 			else
 			{
 				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=uiSize) && (100==usFunctionID) ) ? true : false;
 
-				QuoCollector::GetCollector()->OnImage( usMessageNo, pMsgBody, pFrameHead->nMsgLength, bLastImageFlag );
+				QuoCollector::GetCollector()->OnImage( usMessageNo, pszData, pFrameHead->nMsgLength, bLastImageFlag );
 
 				if( true == bLastImageFlag )
 				{

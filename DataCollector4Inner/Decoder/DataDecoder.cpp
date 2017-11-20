@@ -3,7 +3,7 @@
 
 
 DataDecoder::DataDecoder()
- : m_pDecoderApi( NULL ), m_pXCodeBuffer( NULL ), m_nMaxBufferLen( 0 ), m_nDataLen( 0 )
+ : m_pDecoderApi( NULL )
 {
 }
 
@@ -22,14 +22,6 @@ int DataDecoder::Initialize( std::string sPluginPath, std::string sCnfXml, unsig
 		return nErrorCode;
 	}
 
-	m_pXCodeBuffer = new char[nXCodeBuffSize];
-	if( NULL == m_pXCodeBuffer )
-	{
-		QuoCollector::GetCollector()->OnLog( TLV_ERROR, "DataDecoder::Initialize() : failed 2 allocate decoder buffer" );
-		return -1;
-	}
-
-	m_nMaxBufferLen = nXCodeBuffSize;
 	pFunGetVersion = (T_Func_FetchModuleVersion)m_oDllPlugin.GetDllFunction( "FetchModuleVersion" );
 	pFuncDecodeApi = (T_Func_GetDecodeApi)m_oDllPlugin.GetDllFunction( "GetDecodeApi" );
 
@@ -69,51 +61,29 @@ void DataDecoder::Release()
 		QuoCollector::GetCollector()->OnLog( TLV_INFO, "DataDecoder::Release() : data decoder plugin is released ......" );
 	}
 
-	if( NULL != m_pXCodeBuffer )
-	{
-		delete [] m_pXCodeBuffer;
-		m_pXCodeBuffer = NULL;
-		m_nMaxBufferLen = 0;
-		m_nDataLen = 0;
-	}
-
 	m_oDllPlugin.CloseDll();
 }
 
-int DataDecoder::Prepare4AUncompression( const char* pTagHead )
+int DataDecoder::Prepare4AUncompression( const char* pData, unsigned int nLen )
 {
-	m_nDataLen = 0;
-
-	if( NULL == m_pDecoderApi || NULL == pTagHead )
+	if( NULL == m_pDecoderApi || NULL == pData )
 	{
 		return -1;
 	}
 
-	return m_pDecoderApi->Attach2Buffer( m_pXCodeBuffer + sizeof(tagPackageHead), m_nDataLen - sizeof(tagPackageHead) );
+	return m_pDecoderApi->Attach2Buffer( (char*)pData, nLen );
 }
 
-const char* DataDecoder::GetBufferPtr()
-{
-	return m_pXCodeBuffer;
-}
-
-unsigned int DataDecoder::GetBufferLen()
-{
-	return m_nDataLen + sizeof(tagPackageHead);
-}
-
-bool DataDecoder::UncompressData( unsigned short nMsgID, char *pData, unsigned int nLen )
+int DataDecoder::UncompressData( unsigned short nMsgID, char *pData, unsigned int nLen )
 {
 	int		nErrorCode = m_pDecoderApi->DecodeMessage( nMsgID, pData, nLen );
 
 	if( nErrorCode <= 0 )
 	{
-		return false;
+		return nErrorCode;
 	}
 
-	m_nDataLen = nErrorCode;
-
-	return true;
+	return nErrorCode;
 }
 
 
