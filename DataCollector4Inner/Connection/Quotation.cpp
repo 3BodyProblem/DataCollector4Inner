@@ -364,7 +364,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		QuoCollector::GetCollector()->OnStream( usMessageNo, lpData, uiSize );
 	}
 
-	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < uiSize; nOffset += pFrameHead->nMsgLength )
+	for( unsigned int nOffset = sizeof(tagPackageHead); nOffset < uiSize; )
 	{
 		char*					pMsgBody = (char*)(lpData+nOffset);
 
@@ -381,9 +381,12 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			{
 				QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::OnQuotation() : failed 2 login!" );
 			}
+
+			nOffset += sizeof(tagCommonLoginData_LF299);
 		}
 		else if( 0 != usMessageNo )							///< MsgID == 0 是心跳包
 		{
+			int					nResetOfDataSize = 0;
 			char				pszData[1024] = { 0 };
 
 			if( false == bPrepared )
@@ -396,7 +399,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 				bPrepared = true;
 			}
 
-			m_oDecoder.UncompressData( usMessageNo, pszData, sizeof(pszData) );
+			nResetOfDataSize = m_oDecoder.UncompressData( usMessageNo, pszData, sizeof(pszData) );
 
 			if( m_oWorkStatus == ET_SS_WORKING )
 			{
@@ -413,6 +416,12 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 					m_oWorkStatus = ET_SS_WORKING;	///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
 				}
 			}
+
+			nOffset = (uiSize - nResetOfDataSize);
+		}
+		else
+		{
+			nOffset += sizeof(unsigned int);		///< 心跳包
 		}
 	}
 
