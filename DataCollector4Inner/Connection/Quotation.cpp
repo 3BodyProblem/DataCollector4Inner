@@ -135,7 +135,7 @@ int MkQuotation::Activate()
 
 		if( 0 != m_oDecoder.Initialize( Configuration::GetConfig().GetCompressPluginPath(), Configuration::GetConfig().GetCompressPluginCfg(), 1024*1024*30 ) )
 		{
-			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 initialize decoder plugin." );
+			QuoCollector::GetCollector()->OnLog( TLV_WARN, "MkQuotation::Activate() : failed 2 initialize readl decoder plugin." );
 			return -3;
 		}
 
@@ -350,7 +350,6 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
-	bool						bPrepared = false;
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
@@ -374,7 +373,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 
 			if( 0 == ::strncmp( pLoginResp->pszActionKey, "success", ::strlen( "success" ) ) )
 			{
-				m_oWorkStatus = ET_SS_LOGIN;				///< 登录成功，更新MkQuotation会话的状态
+				m_oWorkStatus = ET_SS_LOGIN;					///< 登录成功，更新MkQuotation会话的状态
 				QuoCollector::GetCollector()->OnLog( TLV_INFO, "MkQuotation::OnQuotation() : log 2 server successfully." );
 			}
 			else
@@ -384,8 +383,9 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 
 			nOffset += sizeof(tagCommonLoginData_LF299);
 		}
-		else if( 0 != usMessageNo )							///< MsgID == 0 是心跳包
+		else if( 0 != usMessageNo )								///< MsgID == 0 是心跳包
 		{
+			bool				bPrepared = false;
 			int					nResetOfDataSize = 0;
 			char				pszData[1024] = { 0 };
 
@@ -407,13 +407,13 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 			}
 			else
 			{
-				bool	bLastImageFlag = ( (nOffset+pFrameHead->nMsgLength >=uiSize) && (100==usFunctionID) ) ? true : false;
+				bool	bLastImageFlag = ( (nResetOfDataSize == 0) && (100==usFunctionID) ) ? true : false;
 
 				QuoCollector::GetCollector()->OnImage( usMessageNo, pszData, pFrameHead->nMsgLength, bLastImageFlag );
 
-				if( true == bLastImageFlag )
+				if( nResetOfDataSize == 0 && 100==usFunctionID )
 				{
-					m_oWorkStatus = ET_SS_WORKING;	///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
+					m_oWorkStatus = ET_SS_WORKING;				///< 收到重复代码，全幅快照已收完整ET_SS_INITIALIZED
 				}
 			}
 
@@ -421,7 +421,7 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		}
 		else
 		{
-			nOffset += sizeof(unsigned int);		///< 心跳包
+			return true;										///< 心跳包
 		}
 	}
 

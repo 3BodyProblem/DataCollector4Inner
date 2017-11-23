@@ -7,7 +7,7 @@
 #include "DataCollector4Inner.h"
 
 
-const std::string		g_sVersion = "1.2.4";
+const std::string		g_sVersion = "1.3.5";
 
 
 QuoCollector::QuoCollector()

@@ -184,8 +184,9 @@ int Configuration::Initialize()
 
 	m_sCompressPluginPath = oIniFile.getStringValue( std::string("SRV"), std::string("compressor"), nErrCode );
 	if( 0 != nErrCode )	{
-		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : miss compress plugin." );
-		return -3;
+		m_sCompressPluginPath = "./DataXCode.dll";
+		QuoCollector::GetCollector()->OnLog( TLV_WARN, "Configuration::Initialize() : Default Data Compressor Plugin Path : %s\n", m_sCompressPluginPath.c_str() );
+
 	}
 	m_sCompressPluginConfig = oIniFile.getStringValue( std::string("SRV"), std::string("compressorcfg"), nErrCode );
 	if( 0 != nErrCode )	{
