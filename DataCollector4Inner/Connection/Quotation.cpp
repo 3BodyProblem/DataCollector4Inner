@@ -350,6 +350,7 @@ bool MkQuotation::OnRecvData( unsigned short usMessageNo, unsigned short usFunct
 
 bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunctionID, const char* lpData, unsigned int uiSize )
 {
+	bool						bPrepared = false;
 	tagPackageHead*				pFrameHead = (tagPackageHead*)lpData;
 	unsigned int				nFrameSeq = pFrameHead->nSeqNo;
 
@@ -385,7 +386,6 @@ bool MkQuotation::OnQuotation( unsigned short usMessageNo, unsigned short usFunc
 		}
 		else if( 0 != usMessageNo )								///< MsgID == 0 ÊÇÐÄÌø°ü
 		{
-			bool				bPrepared = false;
 			int					nResetOfDataSize = 0;
 			char				pszData[1024] = { 0 };
 
